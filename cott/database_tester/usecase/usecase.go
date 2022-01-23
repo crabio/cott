@@ -26,12 +26,15 @@ func (tuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report, 
 	case domain.ComponentType_Postgres:
 		r := repository.NewPostgresDatabaseTesterRepository(tc.Port, tc.Host, tc.User, tc.Password)
 
+		report := domain.NewReport(tc)
+
 		start := time.Now()
 		if err := r.Open(); err != nil {
 			return nil, err
 		}
 		duration := time.Since(start)
 		logrus.WithField("duration", duration).Debug("open connection")
+		report.AddMetric("open connection", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
 
 		start = time.Now()
 		if err := r.CreateDatabase(DATABASE_NAME); err != nil {
@@ -39,6 +42,7 @@ func (tuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report, 
 		}
 		duration = time.Since(start)
 		logrus.WithField("duration", duration).Debug("create database")
+		report.AddMetric("create database", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
 
 		start = time.Now()
 		if err := r.DropDatabase(DATABASE_NAME); err != nil {
@@ -46,6 +50,7 @@ func (tuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report, 
 		}
 		duration = time.Since(start)
 		logrus.WithField("duration", duration).Debug("drop database")
+		report.AddMetric("drop database", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
 
 		start = time.Now()
 		if err := r.Close(); err != nil {
@@ -53,6 +58,9 @@ func (tuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report, 
 		}
 		duration = time.Since(start)
 		logrus.WithField("duration", duration).Debug("close connection")
+		report.AddMetric("close connection", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
+
+		return report, nil
 
 	// Open connection speed
 
@@ -71,6 +79,4 @@ func (tuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report, 
 	default:
 		return nil, domain.UNKNOWN_COMPONENT_FOR_TESTING
 	}
-
-	return nil, nil
 }
