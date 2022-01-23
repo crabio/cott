@@ -12,4 +12,6 @@ type TestCase struct {
 	ComponentType ComponentType
 	Host          string
 	Port          uint16
+	User          string
+	Password      string
 }
