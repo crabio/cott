@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 
 	"github.com/iakrevetkho/components-tests/cott/config"
 	"github.com/iakrevetkho/components-tests/cott/domain"
@@ -14,12 +15,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var shutdownCh chan bool
 var cfg config.Config
 
 func init() {
-	shutdownCh = helpers.AwaitProcSignals()
-
 	if err := configor.Load(&cfg, "config.yaml"); err != nil {
 		logrus.WithError(err).Fatal("Can't parse conf")
 	}
@@ -55,7 +53,9 @@ func main() {
 	}
 	logrus.WithField("report", report).Info("test case done")
 
-	logrus.Info("Awaiting signal.")
-	<-shutdownCh
-	logrus.Info("Exit.")
+	reportBytes, err := json.Marshal(report)
+
+	if err := ioutil.WriteFile(cfg.ReportFilePath, reportBytes, 0644); err != nil {
+		logrus.WithError(err).Error("couldn't write report")
+	}
 }

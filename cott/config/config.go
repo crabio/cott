@@ -5,6 +5,8 @@ import "github.com/sirupsen/logrus"
 type Config struct {
 	Port uint `default:"1004" env:"PORT"`
 
+	ReportFilePath string `default:"report.json" env:"TESTER_REPORT_FILE_PATH"`
+
 	Log LogConfig
 }
 

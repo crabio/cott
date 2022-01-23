@@ -1,17 +1,17 @@
 package domain
 
-type ComponentType uint32
+type ComponentType string
 
 const (
-	ComponentType_NA = iota
-	ComponentType_Postgres
-	ComponentType_Kafka
+	ComponentType_NA       = ""
+	ComponentType_Postgres = "postgres"
+	ComponentType_Kafka    = "kafka"
 )
 
 type TestCase struct {
-	ComponentType ComponentType
-	Host          string
-	Port          uint16
-	User          string
-	Password      string
+	ComponentType ComponentType `json:"component-type"`
+	Host          string        `json:"host"`
+	Port          uint16        `json:"port"`
+	User          string        `json:"user"`
+	Password      string        `json:"password"`
 }

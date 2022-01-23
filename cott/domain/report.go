@@ -1,9 +1,9 @@
 package domain
 
 type Report struct {
-	TestCase *TestCase
-	Score    float32
-	Metrics  []*Metric
+	TestCase *TestCase `json:"test-case"`
+	Score    float32   `json:"score"`
+	Metrics  []*Metric `json:"metrics"`
 }
 
 func NewReport(tc *TestCase) *Report {
