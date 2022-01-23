@@ -8,63 +8,46 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const DATABASE_NAME = "cott_db"
-
 type DatabaseTesterUsecase interface {
 	RunCase(tc *domain.TestCase) (*domain.Report, error)
 }
 
 type databaseTesterUsecase struct {
+	databaseName string
 }
 
-func NewDatabaseTesterUsecase() DatabaseTesterUsecase {
-	return &databaseTesterUsecase{}
+func NewDatabaseTesterUsecase(databaseName string) DatabaseTesterUsecase {
+	dtuc := new(databaseTesterUsecase)
+	dtuc.databaseName = databaseName
+	return dtuc
 }
 
-func (tuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report, error) {
-	switch tc.ComponentType {
-	case domain.ComponentType_Postgres:
-		r := repository.NewPostgresDatabaseTesterRepository(tc.Port, tc.Host, tc.User, tc.Password)
+func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report, error) {
+	r, err := dtuc.createDatabaseRepository(tc)
+	if err != nil {
+		return nil, err
+	}
 
-		report := domain.NewReport(tc)
+	report := domain.NewReport(tc)
 
-		start := time.Now()
-		if err := r.Open(); err != nil {
-			return nil, err
-		}
-		duration := time.Since(start)
-		logrus.WithField("duration", duration).Debug("open connection")
-		report.AddMetric("open connection", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
+	if err := dtuc.calcStepDuration(func() error { return r.Open() }, "openConnection", report); err != nil {
+		return nil, err
+	}
 
-		start = time.Now()
-		if err := r.CreateDatabase(DATABASE_NAME); err != nil {
-			return nil, err
-		}
-		duration = time.Since(start)
-		logrus.WithField("duration", duration).Debug("create database")
-		report.AddMetric("create database", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
+	if err := dtuc.calcStepDuration(func() error { return r.CreateDatabase(dtuc.databaseName) }, "createDatabase", report); err != nil {
+		return nil, err
+	}
 
-		start = time.Now()
-		if err := r.DropDatabase(DATABASE_NAME); err != nil {
-			return nil, err
-		}
-		duration = time.Since(start)
-		logrus.WithField("duration", duration).Debug("drop database")
-		report.AddMetric("drop database", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
+	if err := dtuc.calcStepDuration(func() error { return r.DropDatabase(dtuc.databaseName) }, "dropDatabase", report); err != nil {
+		return nil, err
+	}
 
-		start = time.Now()
-		if err := r.Close(); err != nil {
-			return nil, err
-		}
-		duration = time.Since(start)
-		logrus.WithField("duration", duration).Debug("close connection")
-		report.AddMetric("close connection", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
+	if err := dtuc.calcStepDuration(func() error { return r.Close() }, "closeConnection", report); err != nil {
+		return nil, err
+	}
 
-		return report, nil
+	return report, nil
 
-	// Open connection speed
-
-	// Create database speed
 	// Create tables speed
 	// Single insert speed
 	// Multiple insert speed
@@ -74,9 +57,27 @@ func (tuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report, 
 	// Random foreign select
 	// Join speed
 	// Drop table speed
-	// Drop database speed
+
+}
+
+func (dtuc *databaseTesterUsecase) createDatabaseRepository(tc *domain.TestCase) (repository.DatabaseTesterRepository, error) {
+	switch tc.ComponentType {
+
+	case domain.ComponentType_Postgres:
+		return repository.NewPostgresDatabaseTesterRepository(tc.Port, tc.Host, tc.User, tc.Password), nil
 
 	default:
 		return nil, domain.UNKNOWN_COMPONENT_FOR_TESTING
 	}
+}
+
+func (dtuc *databaseTesterUsecase) calcStepDuration(f func() error, name string, report *domain.Report) error {
+	start := time.Now()
+	if err := f(); err != nil {
+		return err
+	}
+	duration := time.Since(start)
+	logrus.WithFields(logrus.Fields{"duration": duration, "name": name}).Debug("step finished")
+	report.AddMetric(name+"Duration", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
+	return nil
 }

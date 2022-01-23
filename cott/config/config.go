@@ -7,7 +7,8 @@ type Config struct {
 
 	ReportFilePath string `default:"report.json" env:"TESTER_REPORT_FILE_PATH"`
 
-	Log LogConfig
+	Log                  LogConfig
+	DatabaseTesterConfig DatabaseTesterConfig
 }
 
 type LogConfig struct {
@@ -17,4 +18,8 @@ type LogConfig struct {
 	MaxFilesCount    int          `default:"7" env:"LOG_MAX_FILES_COUNT"`
 	MaxFileAgeInDays int          `default:"7" env:"LOG_MAX_FILE_AGE_IN_DAYS"`
 	CompressOldFiles bool         `default:"true" env:"LOG_COMPRESS_OLD_FILES"`
+}
+
+type DatabaseTesterConfig struct {
+	DatabaseName string `default:"cott_db" env:"DATABASE_TESTER_DATABASE_NAME"`
 }

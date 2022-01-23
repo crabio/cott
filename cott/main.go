@@ -35,7 +35,7 @@ func init() {
 }
 
 func main() {
-	dtuc := database_tester_usecase.NewDatabaseTesterUsecase()
+	dtuc := database_tester_usecase.NewDatabaseTesterUsecase(cfg.DatabaseTesterConfig.DatabaseName)
 	tuc := tester_usecase.NewTesterUsecase(dtuc)
 
 	// Test use case
