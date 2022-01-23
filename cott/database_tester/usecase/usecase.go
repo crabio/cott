@@ -28,13 +28,35 @@ func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report,
 		return nil, err
 	}
 
+	const tableName = "test_table"
+
 	report := domain.NewReport(tc)
 
 	if err := dtuc.calcStepDuration(func() error { return r.Open() }, "openConnection", report); err != nil {
 		return nil, err
 	}
 
+	if err := r.DropDatabase(dtuc.databaseName); err != nil {
+		logrus.WithError(err).Debug("couldn't drop database")
+	}
+
 	if err := dtuc.calcStepDuration(func() error { return r.CreateDatabase(dtuc.databaseName) }, "createDatabase", report); err != nil {
+		return nil, err
+	}
+
+	if err := dtuc.calcStepDuration(func() error { return r.SwitchDatabase(dtuc.databaseName) }, "switchDatabase", report); err != nil {
+		return nil, err
+	}
+
+	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(tableName) }, "createTable", report); err != nil {
+		return nil, err
+	}
+
+	if err := dtuc.calcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable", report); err != nil {
+		return nil, err
+	}
+
+	if err := r.SwitchDatabase(""); err != nil {
 		return nil, err
 	}
 
@@ -64,7 +86,7 @@ func (dtuc *databaseTesterUsecase) createDatabaseRepository(tc *domain.TestCase)
 	switch tc.ComponentType {
 
 	case domain.ComponentType_Postgres:
-		return repository.NewPostgresDatabaseTesterRepository(tc.Port, tc.Host, tc.User, tc.Password), nil
+		return repository.NewPostgresDatabaseTesterRepository(tc.Port, tc.Host, tc.User, tc.Password, ""), nil
 
 	default:
 		return nil, domain.UNKNOWN_COMPONENT_FOR_TESTING

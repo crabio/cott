@@ -16,20 +16,22 @@ type postgresDatabaseTesterRepository struct {
 	host     string
 	user     string
 	password string
+	dbname   string
 }
 
-func NewPostgresDatabaseTesterRepository(port uint16, host, user, password string) DatabaseTesterRepository {
+func NewPostgresDatabaseTesterRepository(port uint16, host, user, password, dbname string) DatabaseTesterRepository {
 	r := new(postgresDatabaseTesterRepository)
 	r.port = port
 	r.host = host
 	r.user = user
 	r.password = password
+	r.dbname = dbname
 	return r
 }
 
 func (r *postgresDatabaseTesterRepository) Open() error {
 	var err error
-	r.db, err = sql.Open("postgres", r.createConnString(r.port, r.host, r.user, r.password))
+	r.db, err = sql.Open("postgres", r.createConnString(r.port, r.host, r.user, r.password, r.dbname))
 	if err != nil {
 		return err
 	}
@@ -71,6 +73,57 @@ func (r *postgresDatabaseTesterRepository) DropDatabase(name string) error {
 	return nil
 }
 
+func (r *postgresDatabaseTesterRepository) SwitchDatabase(name string) error {
+	if r.db == nil {
+		return domain.CONNECTION_WAS_NOT_ESTABLISHED
+	}
+
+	r.Close()
+
+	r.dbname = name
+
+	r.Open()
+
+	return nil
+}
+
+func (r *postgresDatabaseTesterRepository) CreateTable(name string) error {
+	if r.db == nil {
+		return domain.CONNECTION_WAS_NOT_ESTABLISHED
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("CREATE TABLE ")
+	buf.WriteString(name)
+	buf.WriteString(" (")
+	buf.WriteString("id SERIAL PRIMARY KEY")
+	buf.WriteString(");")
+
+	_, err := r.db.Exec(buf.String())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *postgresDatabaseTesterRepository) DropTable(name string) error {
+	if r.db == nil {
+		return domain.CONNECTION_WAS_NOT_ESTABLISHED
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("DROP TABLE ")
+	buf.WriteString(name)
+
+	_, err := r.db.Exec(buf.String())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *postgresDatabaseTesterRepository) Close() error {
 	if r.db == nil {
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED
@@ -80,10 +133,12 @@ func (r *postgresDatabaseTesterRepository) Close() error {
 		return err
 	}
 
+	r.db = nil
+
 	return nil
 }
 
-func (r *postgresDatabaseTesterRepository) createConnString(port uint16, host, user, password string) string {
+func (r *postgresDatabaseTesterRepository) createConnString(port uint16, host, user, password, dbname string) string {
 	var buf bytes.Buffer
 
 	buf.WriteString("host=")
@@ -94,6 +149,10 @@ func (r *postgresDatabaseTesterRepository) createConnString(port uint16, host, u
 	buf.WriteString(user)
 	buf.WriteString(" password=")
 	buf.WriteString(password)
+	if dbname != "" {
+		buf.WriteString(" dbname=")
+		buf.WriteString(dbname)
+	}
 	buf.WriteString(" sslmode=disable")
 
 	return buf.String()
