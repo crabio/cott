@@ -25,3 +25,6 @@ test:
 build:
 	@echo "Build app binary"
 	go build -ldflags "-s -w" -o out/server
+
+run:
+	go run .

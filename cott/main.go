@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 
 	"github.com/iakrevetkho/components-tests/cott/config"
+	"github.com/iakrevetkho/components-tests/cott/domain"
 	"github.com/iakrevetkho/components-tests/cott/internal/helpers"
 
+	database_tester_usecase "github.com/iakrevetkho/components-tests/cott/database_tester/usecase"
 	tester_usecase "github.com/iakrevetkho/components-tests/cott/tester/usecase"
 
 	"github.com/jinzhu/configor"
@@ -35,7 +37,23 @@ func init() {
 }
 
 func main() {
-	tester_usecase.NewTesterUsecase()
+	dtuc := database_tester_usecase.NewDatabaseTesterUsecase()
+	tuc := tester_usecase.NewTesterUsecase(dtuc)
+
+	// Test use case
+	tc := &domain.TestCase{
+		ComponentType: domain.ComponentType_Postgres,
+		Host:          "localhost",
+		Port:          5432,
+		User:          "user",
+		Password:      "password",
+	}
+
+	report, err := tuc.RunCase(tc)
+	if err != nil {
+		logrus.WithError(err).Error("test case error")
+	}
+	logrus.WithField("report", report).Info("test case done")
 
 	logrus.Info("Awaiting signal.")
 	<-shutdownCh

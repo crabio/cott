@@ -10,7 +10,7 @@ type Config struct {
 
 type LogConfig struct {
 	Level            logrus.Level `default:"info" env:"LOG_LEVEL"`
-	FilePath         string       `default:"/var/log/grumium/grumium.log" env:"LOG_FILE_PATH"`
+	FilePath         string       `default:"/var/log/cott/cott.log" env:"LOG_FILE_PATH"`
 	MaxFileSizeInMb  int          `default:"10" env:"LOG_MAX_FILE_SIZE_IN_MB"`
 	MaxFilesCount    int          `default:"7" env:"LOG_MAX_FILES_COUNT"`
 	MaxFileAgeInDays int          `default:"7" env:"LOG_MAX_FILE_AGE_IN_DAYS"`
