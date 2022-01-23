@@ -27,4 +27,4 @@ build:
 	go build -ldflags "-s -w" -o out/server
 
 run:
-	go run .
+	LOG_LEVEL=debug go run .
