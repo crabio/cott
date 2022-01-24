@@ -2,7 +2,9 @@ package usecase
 
 import (
 	"context"
+	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -12,9 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	STOP_CONTAINER_TIMEOUT = 10 * time.Second
-)
+var STOP_CONTAINER_TIMEOUT = 10 * time.Second
 
 type ContainerLauncherUsecase interface {
 	// Start continer and returns container ID on success
@@ -32,7 +32,7 @@ func NewContainerLauncherUsecase() (ContainerLauncherUsecase, error) {
 	cluc := new(containerLauncherUsecase)
 	cluc.ctx = context.Background()
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, err
 	}
@@ -44,13 +44,17 @@ func NewContainerLauncherUsecase() (ContainerLauncherUsecase, error) {
 func (cluc *containerLauncherUsecase) LaunchContainer(image string, name string, envVarMap map[string]string, port uint16) (*string, error) {
 	logrus.WithFields(logrus.Fields{"image": image, "name": name, "envVarMap": envVarMap, "port": port}).Debug("launch container")
 
-	reader, err := cluc.cli.ImagePull(cluc.ctx, image, types.ImagePullOptions{})
-	if err != nil {
+	if reader, err := cluc.cli.ImagePull(cluc.ctx, image, types.ImagePullOptions{}); err != nil {
 		return nil, err
+	} else {
+		buf := new(strings.Builder)
+		if _, err := io.Copy(buf, reader); err != nil {
+			return nil, err
+		}
+		logrus.Trace(buf)
+		reader.Close()
 	}
 	logrus.WithFields(logrus.Fields{"image": image}).Debug("container image pulled")
-
-	defer reader.Close()
 
 	portStr := strconv.FormatUint(uint64(port), 10)
 	containerPort := nat.Port(portStr)

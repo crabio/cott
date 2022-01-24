@@ -37,14 +37,18 @@ func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.TestCas
 
 	tcr := domain.NewTestCaseResults(tc)
 
-	time.Sleep(5 * time.Second)
-
 	if err := dtuc.calcStepDuration(func() error { return r.Open() }, "openConnection", tcr); err != nil {
 		return tcr, nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.Ping() }, "openPing", tcr); err != nil {
-		return tcr, nil
+	for i := 0; i < 5; i++ {
+		if err := dtuc.calcStepDuration(func() error { return r.Ping() }, "openPing", tcr); err != nil {
+			logrus.WithError(err).Debug("couldn't ping database")
+			time.Sleep(time.Second)
+		}
+		if i == 5 {
+			return nil, domain.CONNECTION_WAS_NOT_ESTABLISHED
+		}
 	}
 
 	if err := r.DropDatabase(dtuc.databaseName); err != nil {
