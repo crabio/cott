@@ -1,24 +1,24 @@
 package domain
 
-type UnitOfMeasurePrefix uint32
+type UnitOfMeasurePrefix string
 
 const (
-	UnitOfMeasurePrefix_NA = iota
-	UnitOfMeasurePrefix_Nano
-	UnitOfMeasurePrefix_Micro
-	UnitOfMeasurePrefix_Milli
-	UnitOfMeasurePrefix_None
-	UnitOfMeasurePrefix_Kilo
-	UnitOfMeasurePrefix_Mega
-	UnitOfMeasurePrefix_Tera
-	UnitOfMeasurePrefix_Peta
+	UnitOfMeasurePrefix_NA    = "na"
+	UnitOfMeasurePrefix_Nano  = "nano"
+	UnitOfMeasurePrefix_Micro = "micro"
+	UnitOfMeasurePrefix_Milli = "milli"
+	UnitOfMeasurePrefix_None  = ""
+	UnitOfMeasurePrefix_Kilo  = "kilo"
+	UnitOfMeasurePrefix_Mega  = "mega"
+	UnitOfMeasurePrefix_Tera  = "tera"
+	UnitOfMeasurePrefix_Peta  = "peta"
 )
 
-type UnitOfMeasure uint32
+type UnitOfMeasure string
 
 const (
-	UnitOfMeasure_NA = iota
-	UnitOfMeasure_Byte
-	UnitOfMeasure_Second
-	UnitOfMeasure_Piece
+	UnitOfMeasure_NA     = "na"
+	UnitOfMeasure_Byte   = "byte"
+	UnitOfMeasure_Second = "second"
+	UnitOfMeasure_Piece  = "piece"
 )

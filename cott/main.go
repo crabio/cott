@@ -2,22 +2,23 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 
 	"github.com/iakrevetkho/components-tests/cott/config"
+	"github.com/iakrevetkho/components-tests/cott/domain"
 	"github.com/iakrevetkho/components-tests/cott/internal/helpers"
 
+	cl_usecase "github.com/iakrevetkho/components-tests/cott/container_launcher/usecase"
+	dt_usecase "github.com/iakrevetkho/components-tests/cott/database_tester/usecase"
 	tester_usecase "github.com/iakrevetkho/components-tests/cott/tester/usecase"
 
 	"github.com/jinzhu/configor"
 	"github.com/sirupsen/logrus"
 )
 
-var shutdownCh chan bool
 var cfg config.Config
 
 func init() {
-	shutdownCh = helpers.AwaitProcSignals()
-
 	if err := configor.Load(&cfg, "config.yaml"); err != nil {
 		logrus.WithError(err).Fatal("Can't parse conf")
 	}
@@ -35,9 +36,24 @@ func init() {
 }
 
 func main() {
-	tester_usecase.NewTesterUsecase()
+	cluc, err := cl_usecase.NewContainerLauncherUsecase()
+	if err != nil {
+		logrus.WithError(err).Fatal(domain.COULDNT_INIT_CONTAINER_LAUNCHER)
+	}
 
-	logrus.Info("Awaiting signal.")
-	<-shutdownCh
-	logrus.Info("Exit.")
+	dtuc := dt_usecase.NewDatabaseTesterUsecase(cfg.DatabaseTesterConfig.DatabaseName)
+
+	tuc := tester_usecase.NewTesterUsecase(cluc, dtuc)
+
+	report, err := tuc.RunCases(cfg.TestCases)
+	if err != nil {
+		logrus.WithError(err).Error("test case error")
+	}
+	logrus.WithField("report", report).Info("test cases done")
+
+	reportBytes, err := json.Marshal(report)
+
+	if err := ioutil.WriteFile(cfg.Report.FilePath, reportBytes, 0644); err != nil {
+		logrus.WithError(err).Error("couldn't write report")
+	}
 }
