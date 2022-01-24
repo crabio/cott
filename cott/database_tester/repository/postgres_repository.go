@@ -2,13 +2,17 @@ package repository
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"strconv"
+	"time"
 
 	"github.com/iakrevetkho/components-tests/cott/domain"
 
 	_ "github.com/lib/pq"
 )
+
+const PING_TIMEOUT = 5 * time.Second
 
 type postgresDatabaseTesterRepository struct {
 	db       *sql.DB
@@ -19,13 +23,13 @@ type postgresDatabaseTesterRepository struct {
 	dbname   string
 }
 
-func NewPostgresDatabaseTesterRepository(port uint16, host, user, password, dbname string) DatabaseTesterRepository {
+func NewPostgresDatabaseTesterRepository(port uint16, host, user, password string) DatabaseTesterRepository {
 	r := new(postgresDatabaseTesterRepository)
 	r.port = port
 	r.host = host
 	r.user = user
 	r.password = password
-	r.dbname = dbname
+	r.dbname = ""
 	return r
 }
 
@@ -33,6 +37,16 @@ func (r *postgresDatabaseTesterRepository) Open() error {
 	var err error
 	r.db, err = sql.Open("postgres", r.createConnString(r.port, r.host, r.user, r.password, r.dbname))
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *postgresDatabaseTesterRepository) Ping() error {
+	ctx, ctxCancelFunc := context.WithTimeout(context.Background(), PING_TIMEOUT)
+	defer ctxCancelFunc()
+	if err := r.db.PingContext(ctx); err != nil {
 		return err
 	}
 

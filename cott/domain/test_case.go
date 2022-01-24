@@ -9,9 +9,8 @@ const (
 )
 
 type TestCase struct {
-	ComponentType ComponentType `json:"component-type"`
-	Host          string        `json:"host"`
-	Port          uint16        `json:"port"`
-	User          string        `json:"user"`
-	Password      string        `json:"password"`
+	ComponentType ComponentType     `json:"component-type"`
+	Image         string            `json:"image"`
+	Port          uint16            `json:"port"`
+	EnvVars       map[string]string `json:"env-vars"`
 }

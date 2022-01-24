@@ -5,9 +5,11 @@ import (
 	"io/ioutil"
 
 	"github.com/iakrevetkho/components-tests/cott/config"
+	"github.com/iakrevetkho/components-tests/cott/domain"
 	"github.com/iakrevetkho/components-tests/cott/internal/helpers"
 
-	database_tester_usecase "github.com/iakrevetkho/components-tests/cott/database_tester/usecase"
+	cl_usecase "github.com/iakrevetkho/components-tests/cott/container_launcher/usecase"
+	dt_usecase "github.com/iakrevetkho/components-tests/cott/database_tester/usecase"
 	tester_usecase "github.com/iakrevetkho/components-tests/cott/tester/usecase"
 
 	"github.com/jinzhu/configor"
@@ -34,8 +36,14 @@ func init() {
 }
 
 func main() {
-	dtuc := database_tester_usecase.NewDatabaseTesterUsecase(cfg.DatabaseTesterConfig.DatabaseName)
-	tuc := tester_usecase.NewTesterUsecase(dtuc)
+	cluc, err := cl_usecase.NewContainerLauncherUsecase()
+	if err != nil {
+		logrus.WithError(err).Fatal(domain.COULDNT_INIT_CONTAINER_LAUNCHER)
+	}
+
+	dtuc := dt_usecase.NewDatabaseTesterUsecase(cfg.DatabaseTesterConfig.DatabaseName)
+
+	tuc := tester_usecase.NewTesterUsecase(cluc, dtuc)
 
 	report, err := tuc.RunCases(cfg.TestCases)
 	if err != nil {

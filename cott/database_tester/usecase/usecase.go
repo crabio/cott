@@ -8,6 +8,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	POSTGRES_USER_ENV_VAR     = "POSTGRES_USER"
+	POSTGRES_PASSWORD_ENV_VAR = "POSTGRES_PASSWORD"
+)
+
 type DatabaseTesterUsecase interface {
 	RunCase(tc *domain.TestCase) (*domain.TestCaseResults, error)
 }
@@ -32,8 +37,13 @@ func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.TestCas
 
 	tcr := domain.NewTestCaseResults(tc)
 
+	time.Sleep(5 * time.Second)
+
 	if err := dtuc.calcStepDuration(func() error { return r.Open() }, "openConnection", tcr); err != nil {
-		tcr.AddError(err)
+		return tcr, nil
+	}
+
+	if err := dtuc.calcStepDuration(func() error { return r.Ping() }, "openPing", tcr); err != nil {
 		return tcr, nil
 	}
 
@@ -42,37 +52,31 @@ func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.TestCas
 	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.CreateDatabase(dtuc.databaseName) }, "createDatabase", tcr); err != nil {
-		tcr.AddError(err)
 		return tcr, nil
 	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.SwitchDatabase(dtuc.databaseName) }, "switchDatabase", tcr); err != nil {
-		tcr.AddError(err)
 		return tcr, nil
 	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(tableName) }, "createTable", tcr); err != nil {
-		tcr.AddError(err)
 		return tcr, nil
 	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable", tcr); err != nil {
-		tcr.AddError(err)
 		return tcr, nil
 	}
 
 	if err := r.SwitchDatabase(""); err != nil {
-		tcr.AddError(err)
+		tcr.AddError(err.Error())
 		return tcr, nil
 	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.DropDatabase(dtuc.databaseName) }, "dropDatabase", tcr); err != nil {
-		tcr.AddError(err)
 		return tcr, nil
 	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.Close() }, "closeConnection", tcr); err != nil {
-		tcr.AddError(err)
 		return tcr, nil
 	}
 
@@ -94,7 +98,20 @@ func (dtuc *databaseTesterUsecase) createDatabaseRepository(tc *domain.TestCase)
 	switch tc.ComponentType {
 
 	case domain.ComponentType_Postgres:
-		return repository.NewPostgresDatabaseTesterRepository(tc.Port, tc.Host, tc.User, tc.Password, ""), nil
+		// Get user from env vars
+		user, ok := tc.EnvVars[POSTGRES_USER_ENV_VAR]
+		if !ok {
+			logrus.WithField("envVarName", POSTGRES_USER_ENV_VAR).Error(domain.NO_REQUIRED_ENV_VAR_KEY)
+			return nil, domain.NO_REQUIRED_ENV_VAR_KEY
+		}
+		// Get password from env vars
+		password, ok := tc.EnvVars[POSTGRES_PASSWORD_ENV_VAR]
+		if !ok {
+			logrus.WithField("envVarName", POSTGRES_PASSWORD_ENV_VAR).Error(domain.NO_REQUIRED_ENV_VAR_KEY)
+			return nil, domain.NO_REQUIRED_ENV_VAR_KEY
+		}
+
+		return repository.NewPostgresDatabaseTesterRepository(tc.Port, "localhost", user, password), nil
 
 	default:
 		return nil, domain.UNKNOWN_COMPONENT_FOR_TESTING
@@ -104,6 +121,7 @@ func (dtuc *databaseTesterUsecase) createDatabaseRepository(tc *domain.TestCase)
 func (dtuc *databaseTesterUsecase) calcStepDuration(f func() error, name string, tcr *domain.TestCaseResults) error {
 	start := time.Now()
 	if err := f(); err != nil {
+		tcr.AddError(name + ". " + err.Error())
 		return err
 	}
 	duration := time.Since(start)

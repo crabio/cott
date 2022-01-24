@@ -22,7 +22,6 @@ func (r *TestCaseResults) AddMetric(name string, uofp UnitOfMeasurePrefix, uom U
 	})
 }
 
-func (r *TestCaseResults) AddError(err error) {
-	errStr := err.Error()
-	r.Error = &errStr
+func (r *TestCaseResults) AddError(err string) {
+	r.Error = &err
 }
