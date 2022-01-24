@@ -3,10 +3,11 @@ package usecase
 import (
 	database_tester_usecase "github.com/iakrevetkho/components-tests/cott/database_tester/usecase"
 	"github.com/iakrevetkho/components-tests/cott/domain"
+	"github.com/sirupsen/logrus"
 )
 
 type TesterUsecase interface {
-	RunCase(tc *domain.TestCase) (*domain.Report, error)
+	RunCases(tcs []domain.TestCase) (*domain.Report, error)
 }
 
 type testerUsecase struct {
@@ -19,12 +20,25 @@ func NewTesterUsecase(dtuc database_tester_usecase.DatabaseTesterUsecase) Tester
 	return tuc
 }
 
-func (tuc *testerUsecase) RunCase(tc *domain.TestCase) (*domain.Report, error) {
-	switch tc.ComponentType {
-	case domain.ComponentType_Postgres:
-		return tuc.dtuc.RunCase(tc)
+func (tuc *testerUsecase) RunCases(tcs []domain.TestCase) (*domain.Report, error) {
+	r := domain.NewReport()
 
-	default:
-		return nil, domain.UNKNOWN_COMPONENT_FOR_TESTING
+	for _, tc := range tcs {
+
+		switch tc.ComponentType {
+
+		case domain.ComponentType_Postgres:
+			tcr, err := tuc.dtuc.RunCase(&tc)
+			if err != nil {
+				return nil, err
+			}
+			r.AddTestCaseResults(tcr)
+			logrus.WithField("testResults", tcr).Debug("added test results")
+
+		default:
+			return nil, domain.UNKNOWN_COMPONENT_FOR_TESTING
+		}
 	}
+
+	return r, nil
 }

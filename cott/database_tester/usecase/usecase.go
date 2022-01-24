@@ -9,7 +9,7 @@ import (
 )
 
 type DatabaseTesterUsecase interface {
-	RunCase(tc *domain.TestCase) (*domain.Report, error)
+	RunCase(tc *domain.TestCase) (*domain.TestCaseResults, error)
 }
 
 type databaseTesterUsecase struct {
@@ -22,7 +22,7 @@ func NewDatabaseTesterUsecase(databaseName string) DatabaseTesterUsecase {
 	return dtuc
 }
 
-func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report, error) {
+func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.TestCaseResults, error) {
 	r, err := dtuc.createDatabaseRepository(tc)
 	if err != nil {
 		return nil, err
@@ -30,45 +30,53 @@ func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.Report,
 
 	const tableName = "test_table"
 
-	report := domain.NewReport(tc)
+	tcr := domain.NewTestCaseResults(tc)
 
-	if err := dtuc.calcStepDuration(func() error { return r.Open() }, "openConnection", report); err != nil {
-		return nil, err
+	if err := dtuc.calcStepDuration(func() error { return r.Open() }, "openConnection", tcr); err != nil {
+		tcr.AddError(err)
+		return tcr, nil
 	}
 
 	if err := r.DropDatabase(dtuc.databaseName); err != nil {
 		logrus.WithError(err).Debug("couldn't drop database")
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.CreateDatabase(dtuc.databaseName) }, "createDatabase", report); err != nil {
-		return nil, err
+	if err := dtuc.calcStepDuration(func() error { return r.CreateDatabase(dtuc.databaseName) }, "createDatabase", tcr); err != nil {
+		tcr.AddError(err)
+		return tcr, nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.SwitchDatabase(dtuc.databaseName) }, "switchDatabase", report); err != nil {
-		return nil, err
+	if err := dtuc.calcStepDuration(func() error { return r.SwitchDatabase(dtuc.databaseName) }, "switchDatabase", tcr); err != nil {
+		tcr.AddError(err)
+		return tcr, nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(tableName) }, "createTable", report); err != nil {
-		return nil, err
+	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(tableName) }, "createTable", tcr); err != nil {
+		tcr.AddError(err)
+		return tcr, nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable", report); err != nil {
-		return nil, err
+	if err := dtuc.calcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable", tcr); err != nil {
+		tcr.AddError(err)
+		return tcr, nil
 	}
 
 	if err := r.SwitchDatabase(""); err != nil {
-		return nil, err
+		tcr.AddError(err)
+		return tcr, nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.DropDatabase(dtuc.databaseName) }, "dropDatabase", report); err != nil {
-		return nil, err
+	if err := dtuc.calcStepDuration(func() error { return r.DropDatabase(dtuc.databaseName) }, "dropDatabase", tcr); err != nil {
+		tcr.AddError(err)
+		return tcr, nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.Close() }, "closeConnection", report); err != nil {
-		return nil, err
+	if err := dtuc.calcStepDuration(func() error { return r.Close() }, "closeConnection", tcr); err != nil {
+		tcr.AddError(err)
+		return tcr, nil
 	}
 
-	return report, nil
+	return tcr, nil
 
 	// Create tables speed
 	// Single insert speed
@@ -93,13 +101,13 @@ func (dtuc *databaseTesterUsecase) createDatabaseRepository(tc *domain.TestCase)
 	}
 }
 
-func (dtuc *databaseTesterUsecase) calcStepDuration(f func() error, name string, report *domain.Report) error {
+func (dtuc *databaseTesterUsecase) calcStepDuration(f func() error, name string, tcr *domain.TestCaseResults) error {
 	start := time.Now()
 	if err := f(); err != nil {
 		return err
 	}
 	duration := time.Since(start)
 	logrus.WithFields(logrus.Fields{"duration": duration, "name": name}).Debug("step finished")
-	report.AddMetric(name+"Duration", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
+	tcr.AddMetric(name+"Duration", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
 	return nil
 }

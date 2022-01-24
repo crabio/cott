@@ -1,0 +1,14 @@
+report:
+  filepath: "report.json"
+
+testcases:
+  - componenttype: "postgres"
+    host: "localhost"
+    port: 5432
+    user: "user"
+    password: "password"
+  - componenttype: "postgres"
+    host: "wrong_host"
+    port: 5432
+    user: "user"
+    password: "password"

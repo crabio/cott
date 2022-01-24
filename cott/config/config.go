@@ -1,14 +1,15 @@
 package config
 
-import "github.com/sirupsen/logrus"
+import (
+	"github.com/iakrevetkho/components-tests/cott/domain"
+	"github.com/sirupsen/logrus"
+)
 
 type Config struct {
-	Port uint `default:"1004" env:"PORT"`
-
-	ReportFilePath string `default:"report.json" env:"TESTER_REPORT_FILE_PATH"`
-
 	Log                  LogConfig
+	Report               ReportConfig
 	DatabaseTesterConfig DatabaseTesterConfig
+	TestCases            []domain.TestCase
 }
 
 type LogConfig struct {
@@ -18,6 +19,10 @@ type LogConfig struct {
 	MaxFilesCount    int          `default:"7" env:"LOG_MAX_FILES_COUNT"`
 	MaxFileAgeInDays int          `default:"7" env:"LOG_MAX_FILE_AGE_IN_DAYS"`
 	CompressOldFiles bool         `default:"true" env:"LOG_COMPRESS_OLD_FILES"`
+}
+
+type ReportConfig struct {
+	FilePath string `default:"report.json" env:"REPORT_FILE_PATH"`
 }
 
 type DatabaseTesterConfig struct {
