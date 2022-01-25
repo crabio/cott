@@ -166,14 +166,14 @@ func (r *postgresDatabaseTesterRepository) SingleInsert(tableName string, column
 
 	for i := 0; i < len(columns); i++ {
 		buf.WriteByte('$')
-		buf.WriteString(strconv.FormatInt(int64(i), 10))
+		buf.WriteString(strconv.FormatInt(int64(i+1), 10))
 		if i < len(columns)-1 {
 			buf.WriteByte(',')
 		}
 	}
 	buf.WriteByte(')')
 
-	if _, err := r.db.Exec(buf.String(), values); err != nil {
+	if _, err := r.db.Exec(buf.String(), values...); err != nil {
 		return err
 	}
 
