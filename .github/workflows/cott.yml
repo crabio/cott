@@ -1,0 +1,64 @@
+name: COTT
+
+on:
+  push:
+
+defaults:
+  run:
+    shell: bash
+    working-directory: cott
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    container:
+      image: golang:latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Install tools
+        run: make install
+      - name: Test
+        run: make test
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v2
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: server/coverage.txt
+      #     flags: server
+      #     fail_ci_if_error: false
+      #     verbose: true
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    container:
+      image: golang:latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Install tools
+        run: make install
+      - name: Lint
+        run: make lint
+
+  build:
+    name: Build binary
+    needs:
+      - test
+      - lint
+    runs-on: ubuntu-latest
+    container:
+      image: golang:latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Build artifact
+        run: make build
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: cott
+          path: ./cott/out/cott
+          retention-days: 7
