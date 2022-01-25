@@ -153,6 +153,17 @@ func (dtuc *databaseTesterUsecase) testKeyValueTable(tcra *domain.TestCaseResult
 	}
 
 	if err := dtuc.calcStepDuration(func() error {
+		for i := 0; i < 10; i++ {
+			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, []interface{}{"key", "value"}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}, "10xInsertKeyValueTable", tcra); err != nil {
+		return
+	}
+
+	if err := dtuc.calcStepDuration(func() error {
 		for i := 0; i < 100; i++ {
 			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, []interface{}{"key", "value"}); err != nil {
 				return err
@@ -171,39 +182,6 @@ func (dtuc *databaseTesterUsecase) testKeyValueTable(tcra *domain.TestCaseResult
 		}
 		return nil
 	}, "1000xInsertKeyValueTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 10000; i++ {
-			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, []interface{}{"key", "value"}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "10000xInsertKeyValueTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 100000; i++ {
-			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, []interface{}{"key", "value"}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "100000xInsertKeyValueTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 1000000; i++ {
-			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, []interface{}{"key", "value"}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "1000000xInsertKeyValueTable", tcra); err != nil {
 		return
 	}
 
@@ -235,6 +213,17 @@ func (dtuc *databaseTesterUsecase) testMeasurmentsTable(tcra *domain.TestCaseRes
 	}
 
 	if err := dtuc.calcStepDuration(func() error {
+		for i := 0; i < 10; i++ {
+			if err := r.SingleInsert(measurmentsTableName, measurmentsTableColumns, measurmentsTableData); err != nil {
+				return err
+			}
+		}
+		return nil
+	}, "10xInsertMeasurementsTable", tcra); err != nil {
+		return
+	}
+
+	if err := dtuc.calcStepDuration(func() error {
 		for i := 0; i < 100; i++ {
 			if err := r.SingleInsert(measurmentsTableName, measurmentsTableColumns, measurmentsTableData); err != nil {
 				return err
@@ -253,39 +242,6 @@ func (dtuc *databaseTesterUsecase) testMeasurmentsTable(tcra *domain.TestCaseRes
 		}
 		return nil
 	}, "1000xInsertMeasurementsTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 10000; i++ {
-			if err := r.SingleInsert(measurmentsTableName, measurmentsTableColumns, measurmentsTableData); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "10000xInsertMeasurementsTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 100000; i++ {
-			if err := r.SingleInsert(measurmentsTableName, measurmentsTableColumns, measurmentsTableData); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "100000xInsertMeasurementsTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 1000000; i++ {
-			if err := r.SingleInsert(measurmentsTableName, measurmentsTableColumns, measurmentsTableData); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "1000000xInsertMeasurementsTable", tcra); err != nil {
 		return
 	}
 
