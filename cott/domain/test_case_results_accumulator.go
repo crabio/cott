@@ -23,7 +23,7 @@ func (r *TestCaseResultsAccumulator) AddMetric(name string, uofp UnitOfMeasurePr
 	}
 
 	if values, ok := r.MetricsMap[metricMeta]; ok {
-		values = append(values, value)
+		r.MetricsMap[metricMeta] = append(values, value)
 	} else {
 		r.MetricsMap[metricMeta] = []float64{value}
 	}
