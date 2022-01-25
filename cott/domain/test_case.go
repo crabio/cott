@@ -13,4 +13,5 @@ type TestCase struct {
 	Image         string            `json:"image"`
 	Port          uint16            `json:"port"`
 	EnvVars       map[string]string `json:"env-vars"`
+	Accumulations uint16            `json:"accumulations" default:"16"`
 }

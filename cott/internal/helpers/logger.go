@@ -8,14 +8,14 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/iakrevetkho/components-tests/cott/config"
+	"github.com/iakrevetkho/components-tests/cott/domain"
 
 	"github.com/robfig/cron"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func InitLogger(config *config.Config) error {
+func InitLogger(config *domain.Config) error {
 	SetLoggerFormat(config)
 
 	// Check that app can write the log file
@@ -50,7 +50,7 @@ func InitLogger(config *config.Config) error {
 	return nil
 }
 
-func SetLoggerFormat(config *config.Config) {
+func SetLoggerFormat(config *domain.Config) {
 	// Set logger formatter
 	logrus.SetReportCaller(true)
 	logrus.SetFormatter(&logrus.TextFormatter{

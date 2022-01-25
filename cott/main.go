@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/iakrevetkho/components-tests/cott/config"
 	"github.com/iakrevetkho/components-tests/cott/domain"
 	"github.com/iakrevetkho/components-tests/cott/internal/helpers"
 
@@ -16,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var cfg config.Config
+var cfg domain.Config
 
 func init() {
 	if err := configor.Load(&cfg, "config.yaml"); err != nil {

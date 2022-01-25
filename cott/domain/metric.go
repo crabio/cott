@@ -1,8 +1,12 @@
 package domain
 
-type Metric struct {
+type MetricMeta struct {
 	Name                string              `json:"name"`
 	UnitOfMeasurePrefix UnitOfMeasurePrefix `json:"uom-prefix"`
 	UnitOfMeasure       UnitOfMeasure       `json:"uom"`
-	Value               float64             `json:"value"`
+}
+
+type Metric struct {
+	Meta  MetricMeta `json:"meta"`
+	Value float64    `json:"value"`
 }
