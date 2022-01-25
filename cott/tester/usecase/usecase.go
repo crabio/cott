@@ -31,7 +31,7 @@ func (tuc *testerUsecase) RunCases(tcs []domain.TestCase) (*domain.Report, error
 		switch tc.ComponentType {
 
 		case domain.ComponentType_Postgres:
-			containerId, err := tuc.cluc.LaunchContainer(tc.Image, string(tc.ComponentType), tc.EnvVars, tc.Port)
+			containerId, err := tuc.cluc.LaunchContainer(tc.Image, tc.EnvVars, tc.Port)
 			if err != nil {
 				return nil, err
 			}

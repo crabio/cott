@@ -18,7 +18,7 @@ var STOP_CONTAINER_TIMEOUT = 10 * time.Second
 
 type ContainerLauncherUsecase interface {
 	// Start continer and returns container ID on success
-	LaunchContainer(image string, name string, envVarMap map[string]string, port uint16) (*string, error)
+	LaunchContainer(image string, envVarMap map[string]string, port uint16) (*string, error)
 	StopContainer(id string) error
 	RemoveContainer(id string) error
 }
@@ -41,8 +41,8 @@ func NewContainerLauncherUsecase() (ContainerLauncherUsecase, error) {
 	return cluc, nil
 }
 
-func (cluc *containerLauncherUsecase) LaunchContainer(image string, name string, envVarMap map[string]string, port uint16) (*string, error) {
-	logrus.WithFields(logrus.Fields{"image": image, "name": name, "envVarMap": envVarMap, "port": port}).Debug("launch container")
+func (cluc *containerLauncherUsecase) LaunchContainer(image string, envVarMap map[string]string, port uint16) (*string, error) {
+	logrus.WithFields(logrus.Fields{"image": image, "envVarMap": envVarMap, "port": port}).Debug("launch container")
 
 	if reader, err := cluc.cli.ImagePull(cluc.ctx, image, types.ImagePullOptions{}); err != nil {
 		return nil, err
@@ -76,16 +76,16 @@ func (cluc *containerLauncherUsecase) LaunchContainer(image string, name string,
 		},
 	}
 
-	resp, err := cluc.cli.ContainerCreate(cluc.ctx, containerCfg, hostCfg, nil, nil, name)
+	resp, err := cluc.cli.ContainerCreate(cluc.ctx, containerCfg, hostCfg, nil, nil, "")
 	if err != nil {
 		return nil, err
 	}
-	logrus.WithFields(logrus.Fields{"image": image, "name": name, "id": resp.ID}).Debug("container created")
+	logrus.WithFields(logrus.Fields{"image": image, "id": resp.ID}).Debug("container created")
 
 	if err := cluc.cli.ContainerStart(cluc.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		return nil, err
 	}
-	logrus.WithFields(logrus.Fields{"image": image, "name": name, "id": resp.ID}).Debug("container started")
+	logrus.WithFields(logrus.Fields{"image": image, "id": resp.ID}).Debug("container started")
 
 	return &resp.ID, nil
 }
