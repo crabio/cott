@@ -147,6 +147,39 @@ func (r *postgresDatabaseTesterRepository) DropTable(name string) error {
 	return nil
 }
 
+func (r *postgresDatabaseTesterRepository) SingleInsert(tableName string, columns []string, values []interface{}) error {
+	if r.db == nil {
+		return domain.CONNECTION_WAS_NOT_ESTABLISHED
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("INSERT INTO ")
+	buf.WriteString(tableName)
+	buf.WriteString(" (")
+	for i, column := range columns {
+		buf.WriteString(column)
+		if i < len(columns) {
+			buf.WriteByte(',')
+		}
+	}
+	buf.WriteString(") VALUES (")
+
+	for i := 0; i < len(columns); i++ {
+		buf.WriteByte('$')
+		buf.WriteString(strconv.FormatInt(int64(i), 10))
+		if i < len(columns) {
+			buf.WriteByte(',')
+		}
+	}
+	buf.WriteByte(')')
+
+	if _, err := r.db.Exec(buf.String(), values); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *postgresDatabaseTesterRepository) Close() error {
 	if r.db == nil {
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED

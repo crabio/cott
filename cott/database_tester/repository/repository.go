@@ -8,5 +8,6 @@ type DatabaseTesterRepository interface {
 	SwitchDatabase(name string) error
 	CreateTable(name string, fields []string) error
 	DropTable(name string) error
+	SingleInsert(tableName string, columns []string, values []interface{}) error
 	Close() error
 }
