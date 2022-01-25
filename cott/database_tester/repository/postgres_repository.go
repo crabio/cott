@@ -116,7 +116,7 @@ func (r *postgresDatabaseTesterRepository) CreateTable(name string, fields []str
 	buf.WriteString(" (")
 	for i, field := range fields {
 		buf.WriteString(field)
-		if i < len(fields) {
+		if i < len(fields)-1 {
 			buf.WriteByte(',')
 		}
 	}
@@ -158,7 +158,7 @@ func (r *postgresDatabaseTesterRepository) SingleInsert(tableName string, column
 	buf.WriteString(" (")
 	for i, column := range columns {
 		buf.WriteString(column)
-		if i < len(columns) {
+		if i < len(columns)-1 {
 			buf.WriteByte(',')
 		}
 	}
@@ -167,7 +167,7 @@ func (r *postgresDatabaseTesterRepository) SingleInsert(tableName string, column
 	for i := 0; i < len(columns); i++ {
 		buf.WriteByte('$')
 		buf.WriteString(strconv.FormatInt(int64(i), 10))
-		if i < len(columns) {
+		if i < len(columns)-1 {
 			buf.WriteByte(',')
 		}
 	}
