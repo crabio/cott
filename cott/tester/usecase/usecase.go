@@ -39,7 +39,7 @@ func (tuc *testerUsecase) RunCases(tcs []domain.TestCase) (*domain.Report, error
 			tcra := domain.NewTestCaseResultsAccumulator(&tc)
 
 			// Accumulations loop
-			for i := 0; i < int(tc.Accumulations); i++ {
+			for i := 0; i < int(tc.GetAccumulationsCount()); i++ {
 				if err := tuc.dtuc.RunCase(tcra); err != nil {
 					return nil, err
 				}

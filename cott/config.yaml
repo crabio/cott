@@ -8,6 +8,7 @@ testcases:
     envvars:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
+    accumulations: 1
   # - componenttype: postgres
   #   image: postgres:11
   #   port: 5432
