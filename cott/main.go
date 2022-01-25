@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/iakrevetkho/components-tests/cott/config"
 	"github.com/iakrevetkho/components-tests/cott/domain"
 	"github.com/iakrevetkho/components-tests/cott/internal/helpers"
 
@@ -16,7 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var cfg config.Config
+var cfg domain.Config
 
 func init() {
 	if err := configor.Load(&cfg, "config.yaml"); err != nil {
@@ -52,8 +51,11 @@ func main() {
 	logrus.WithField("report", report).Info("test cases done")
 
 	reportBytes, err := json.Marshal(report)
+	if err != nil {
+		logrus.WithError(err).Fatal("couldn't serialise report")
+	}
 
 	if err := ioutil.WriteFile(cfg.Report.FilePath, reportBytes, 0644); err != nil {
-		logrus.WithError(err).Error("couldn't write report")
+		logrus.WithError(err).Fatal("couldn't write report")
 	}
 }

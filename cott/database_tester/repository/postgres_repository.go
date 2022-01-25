@@ -92,11 +92,15 @@ func (r *postgresDatabaseTesterRepository) SwitchDatabase(name string) error {
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED
 	}
 
-	r.Close()
+	if err := r.Close(); err != nil {
+		return err
+	}
 
 	r.dbname = name
 
-	r.Open()
+	if err := r.Open(); err != nil {
+		return err
+	}
 
 	return nil
 }

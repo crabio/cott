@@ -32,7 +32,7 @@ func NewContainerLauncherUsecase() (ContainerLauncherUsecase, error) {
 	cluc := new(containerLauncherUsecase)
 	cluc.ctx = context.Background()
 
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, err
 	}

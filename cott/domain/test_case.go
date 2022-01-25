@@ -13,4 +13,13 @@ type TestCase struct {
 	Image         string            `json:"image"`
 	Port          uint16            `json:"port"`
 	EnvVars       map[string]string `json:"env-vars"`
+	Accumulations uint16
+}
+
+func (tc *TestCase) GetAccumulationsCount() uint16 {
+	if tc.Accumulations == 0 {
+		return 16
+	} else {
+		return tc.Accumulations
+	}
 }

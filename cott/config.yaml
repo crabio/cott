@@ -8,27 +8,28 @@ testcases:
     envvars:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-  - componenttype: postgres
-    image: postgres:11
-    port: 5432
-    envvars:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-  - componenttype: postgres
-    image: postgres:12
-    port: 5432
-    envvars:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-  - componenttype: postgres
-    image: postgres:13
-    port: 5432
-    envvars:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-  - componenttype: postgres
-    image: postgres:14
-    port: 5432
-    envvars:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+    accumulations: 1
+  # - componenttype: postgres
+  #   image: postgres:11
+  #   port: 5432
+  #   envvars:
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: password
+  # - componenttype: postgres
+  #   image: postgres:12
+  #   port: 5432
+  #   envvars:
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: password
+  # - componenttype: postgres
+  #   image: postgres:13
+  #   port: 5432
+  #   envvars:
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: password
+  # - componenttype: postgres
+  #   image: postgres:14
+  #   port: 5432
+  #   envvars:
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: password

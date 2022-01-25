@@ -24,7 +24,7 @@ test:
 
 build:
 	@echo "Build app binary"
-	go build -ldflags "-s -w" -o out/server
+	go build -ldflags "-s -w" -o out/cott
 
 run:
 	LOG_LEVEL=debug go run .

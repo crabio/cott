@@ -1,7 +1,6 @@
-package config
+package domain
 
 import (
-	"github.com/iakrevetkho/components-tests/cott/domain"
 	"github.com/sirupsen/logrus"
 )
 
@@ -9,7 +8,7 @@ type Config struct {
 	Log                  LogConfig
 	Report               ReportConfig
 	DatabaseTesterConfig DatabaseTesterConfig
-	TestCases            []domain.TestCase
+	TestCases            []TestCase
 }
 
 type LogConfig struct {

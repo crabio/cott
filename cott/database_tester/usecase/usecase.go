@@ -14,7 +14,7 @@ const (
 )
 
 type DatabaseTesterUsecase interface {
-	RunCase(tc *domain.TestCase) (*domain.TestCaseResults, error)
+	RunCase(tcra *domain.TestCaseResultsAccumulator) error
 }
 
 type databaseTesterUsecase struct {
@@ -27,18 +27,16 @@ func NewDatabaseTesterUsecase(databaseName string) DatabaseTesterUsecase {
 	return dtuc
 }
 
-func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.TestCaseResults, error) {
-	r, err := dtuc.createDatabaseRepository(tc)
+func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulator) error {
+	r, err := dtuc.createDatabaseRepository(tcra.TestCase)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	const tableName = "test_table"
 
-	tcr := domain.NewTestCaseResults(tc)
-
-	if err := dtuc.calcStepDuration(func() error { return r.Open() }, "openConnection", tcr); err != nil {
-		return tcr, nil
+	if err := dtuc.calcStepDuration(func() error { return r.Open() }, "openConnection", tcra); err != nil {
+		return nil
 	}
 
 	// Await for DB ready
@@ -53,7 +51,7 @@ func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.TestCas
 			}
 		}
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED
-	}, "startUp", tcr); err != nil {
+	}, "startUp", tcra); err != nil {
 		logrus.WithError(err).Debug("couldn't ping database")
 		time.Sleep(time.Second)
 	}
@@ -62,36 +60,36 @@ func (dtuc *databaseTesterUsecase) RunCase(tc *domain.TestCase) (*domain.TestCas
 		logrus.WithError(err).Debug("couldn't drop database")
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.CreateDatabase(dtuc.databaseName) }, "createDatabase", tcr); err != nil {
-		return tcr, nil
+	if err := dtuc.calcStepDuration(func() error { return r.CreateDatabase(dtuc.databaseName) }, "createDatabase", tcra); err != nil {
+		return nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.SwitchDatabase(dtuc.databaseName) }, "switchDatabase", tcr); err != nil {
-		return tcr, nil
+	if err := dtuc.calcStepDuration(func() error { return r.SwitchDatabase(dtuc.databaseName) }, "switchDatabase", tcra); err != nil {
+		return nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(tableName) }, "createTable", tcr); err != nil {
-		return tcr, nil
+	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(tableName) }, "createTable", tcra); err != nil {
+		return nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable", tcr); err != nil {
-		return tcr, nil
+	if err := dtuc.calcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable", tcra); err != nil {
+		return nil
 	}
 
 	if err := r.SwitchDatabase(""); err != nil {
-		tcr.AddError(err.Error())
-		return tcr, nil
+		tcra.AddError(err.Error())
+		return nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.DropDatabase(dtuc.databaseName) }, "dropDatabase", tcr); err != nil {
-		return tcr, nil
+	if err := dtuc.calcStepDuration(func() error { return r.DropDatabase(dtuc.databaseName) }, "dropDatabase", tcra); err != nil {
+		return nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.Close() }, "closeConnection", tcr); err != nil {
-		return tcr, nil
+	if err := dtuc.calcStepDuration(func() error { return r.Close() }, "closeConnection", tcra); err != nil {
+		return nil
 	}
 
-	return tcr, nil
+	return nil
 
 	// Create tables speed
 	// Single insert speed
@@ -129,14 +127,14 @@ func (dtuc *databaseTesterUsecase) createDatabaseRepository(tc *domain.TestCase)
 	}
 }
 
-func (dtuc *databaseTesterUsecase) calcStepDuration(f func() error, name string, tcr *domain.TestCaseResults) error {
+func (dtuc *databaseTesterUsecase) calcStepDuration(f func() error, name string, tcra *domain.TestCaseResultsAccumulator) error {
 	start := time.Now()
 	if err := f(); err != nil {
-		tcr.AddError(name + ". " + err.Error())
+		tcra.AddError(name + ". " + err.Error())
 		return err
 	}
 	duration := time.Since(start)
 	logrus.WithFields(logrus.Fields{"duration": duration, "name": name}).Debug("step finished")
-	tcr.AddMetric(name+"Duration", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
+	tcra.AddMetric(name+"Duration", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
 	return nil
 }

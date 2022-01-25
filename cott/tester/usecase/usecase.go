@@ -36,10 +36,17 @@ func (tuc *testerUsecase) RunCases(tcs []domain.TestCase) (*domain.Report, error
 				return nil, err
 			}
 
-			tcr, err := tuc.dtuc.RunCase(&tc)
-			if err != nil {
-				return nil, err
+			tcra := domain.NewTestCaseResultsAccumulator(&tc)
+
+			// Accumulations loop
+			for i := 0; i < int(tc.GetAccumulationsCount()); i++ {
+				if err := tuc.dtuc.RunCase(tcra); err != nil {
+					return nil, err
+				}
 			}
+
+			tcr := tcra.ToTestCaseResults()
+
 			r.AddTestCaseResults(tcr)
 			logrus.WithField("testResults", tcr).Debug("added test results")
 
