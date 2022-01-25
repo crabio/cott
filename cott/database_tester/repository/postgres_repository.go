@@ -105,7 +105,7 @@ func (r *postgresDatabaseTesterRepository) SwitchDatabase(name string) error {
 	return nil
 }
 
-func (r *postgresDatabaseTesterRepository) CreateTable(name string) error {
+func (r *postgresDatabaseTesterRepository) CreateTable(name string, fields []string) error {
 	if r.db == nil {
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED
 	}
@@ -114,7 +114,12 @@ func (r *postgresDatabaseTesterRepository) CreateTable(name string) error {
 	buf.WriteString("CREATE TABLE ")
 	buf.WriteString(name)
 	buf.WriteString(" (")
-	buf.WriteString("id SERIAL PRIMARY KEY")
+	for i, field := range fields {
+		buf.WriteString(field)
+		if i < len(fields) {
+			buf.WriteByte(',')
+		}
+	}
 	buf.WriteString(");")
 
 	_, err := r.db.Exec(buf.String())

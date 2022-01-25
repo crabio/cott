@@ -33,7 +33,10 @@ func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulat
 		return err
 	}
 
-	const tableName = "test_table"
+	var (
+		keyValueTableName   = "key_value"
+		keyValueTableFields = []string{"key VARCHAR(255) PRIMARY KEY", "value VARCHAR(255)"}
+	)
 
 	if err := dtuc.calcStepDuration(func() error { return r.Open() }, "openConnection", tcra); err != nil {
 		return nil
@@ -68,11 +71,11 @@ func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulat
 		return nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(tableName) }, "createTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(keyValueTableName, keyValueTableFields) }, "createKeyValueTable", tcra); err != nil {
 		return nil
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.DropTable(keyValueTableName) }, "dropKeyValueTable", tcra); err != nil {
 		return nil
 	}
 
