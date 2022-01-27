@@ -184,9 +184,9 @@ func (r *postgresDatabaseTesterRepository) SelectById(tableName string, id uint6
 	var buf bytes.Buffer
 	buf.WriteString("SELECT * FROM ")
 	buf.WriteString(tableName)
-	buf.WriteString("WHERE id=?")
+	buf.WriteString(" WHERE id=$1")
 
-	if _, err := r.db.Exec(buf.String(), id); err != nil {
+	if _, err := r.db.Query(buf.String(), id); err != nil {
 		return err
 	}
 
@@ -201,10 +201,10 @@ func (r *postgresDatabaseTesterRepository) SelectByConditions(tableName string, 
 	var buf bytes.Buffer
 	buf.WriteString("SELECT * FROM ")
 	buf.WriteString(tableName)
-	buf.WriteString("WHERE ")
+	buf.WriteString(" WHERE ")
 	buf.WriteString(conditions)
 
-	if _, err := r.db.Exec(buf.String()); err != nil {
+	if _, err := r.db.Query(buf.String()); err != nil {
 		return err
 	}
 
