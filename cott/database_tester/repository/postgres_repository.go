@@ -176,6 +176,41 @@ func (r *postgresDatabaseTesterRepository) Insert(tableName string, columns []st
 	return nil
 }
 
+func (r *postgresDatabaseTesterRepository) SelectById(tableName string, id uint64) error {
+	if r.db == nil {
+		return domain.CONNECTION_WAS_NOT_ESTABLISHED
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("SELECT * FROM ")
+	buf.WriteString(tableName)
+	buf.WriteString("WHERE id=?")
+
+	if _, err := r.db.Exec(buf.String(), id); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *postgresDatabaseTesterRepository) SelectByConditions(tableName string, conditions string) error {
+	if r.db == nil {
+		return domain.CONNECTION_WAS_NOT_ESTABLISHED
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("SELECT * FROM ")
+	buf.WriteString(tableName)
+	buf.WriteString("WHERE ")
+	buf.WriteString(conditions)
+
+	if _, err := r.db.Exec(buf.String()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *postgresDatabaseTesterRepository) Close() error {
 	if r.db == nil {
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED
