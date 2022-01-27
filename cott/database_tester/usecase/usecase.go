@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/iakrevetkho/components-tests/cott/database_tester/repository"
@@ -143,8 +144,8 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 			"f10 SMALLSERIAL",
 			"f11 SERIAL",
 		}
-		tableColumns    = []string{"f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11"}
-		selctConditions = "f1>1 AND f2>1 AND f3 AND F5>0.5 AND f6>0.5 AND f7>1 AND f8>1 AND f9>1 AND f10>1 AND f11>1"
+		tableColumns     = []string{"f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11"}
+		selectConditions = "f1>1 AND f2>1 AND f3 AND F5>0.5 AND f6>0.5 AND f7>1 AND f8>1 AND f9>1 AND f10>1 AND f11>1"
 	)
 
 	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(tableName, keyValueTableFields) }, "createTable", tcra); err != nil {
@@ -155,246 +156,61 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsertEmptyTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectById(tableName, 1) }, "selectById1xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectByConditions(tableName, selctConditions) }, "selectByConditions1xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate1XTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsertEmptyTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectById(tableName, 5) }, "selectById10xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectByConditions(tableName, selctConditions) }, "selectByConditions10xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate10XTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsertEmptyTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectById(tableName, 50) }, "selectById100xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectByConditions(tableName, selctConditions) }, "selectByConditions100xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate100XTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsertEmptyTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectById(tableName, 500) }, "selectById1000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectByConditions(tableName, selctConditions) }, "selectByConditions1000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsert1000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsert1000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsert1000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsert1000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate2000XTable", tcra); err != nil {
-		return
-	}
-
-	// Use for loop because postgress 65536 params
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 10; i++ {
-			if err := r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)); err != nil {
-				return err
-			}
+	for i := 1; i <= 10000000; i *= 10 {
+		if err := dtuc.testTableInsertSelect(tcra, r, tableName, tableColumns, selectConditions, i); err != nil {
+			return
 		}
-		return nil
-	}, "10000xInsertEmptyTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectById(tableName, 5000) }, "selectById10000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectByConditions(tableName, selctConditions) }, "selectByConditions10000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsert10000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsert10000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsert10000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsert10000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate10000XTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 100; i++ {
-			if err := r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "100000xInsertEmptyTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectById(tableName, 50000) }, "selectById100000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectByConditions(tableName, selctConditions) }, "selectByConditions100000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsert100000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsert100000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsert100000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsert100000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate100000XTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 1000; i++ {
-			if err := r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "1000000xInsertEmptyTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectById(tableName, 500000) }, "selectById1000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectByConditions(tableName, selctConditions) }, "selectByConditions1000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsert1000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsert1000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsert1000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsert1000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate1000000XTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 10000; i++ {
-			if err := r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "10000000xInsertEmptyTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectById(tableName, 5000000) }, "selectById10000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.SelectByConditions(tableName, selctConditions) }, "selectByConditions10000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsert10000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsert10000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsert10000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsert10000000xTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate10000000XTable", tcra); err != nil {
-		return
 	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable", tcra); err != nil {
 		return
 	}
+}
+
+func (dtuc *databaseTesterUsecase) testTableInsertSelect(tcra *domain.TestCaseResultsAccumulator, r repository.DatabaseTesterRepository, tableName string, tableColumns []string, selectConditions string, dataCount int) error {
+	testPrefix := strconv.FormatInt(int64(dataCount), 10) + "x"
+
+	if err := dtuc.calcStepDuration(func() error {
+		if dataCount > 1000 {
+			// Postgres bulk insert support max 65536 params
+			// Split insert by 1000 rows
+			for i := dataCount / 1000; i > 0; i-- {
+				if err := r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)); err != nil {
+					return err
+				}
+			}
+		} else {
+			return r.Insert(tableName, tableColumns, dtuc.generateTableData(dataCount))
+		}
+
+		return nil
+	}, testPrefix+"InsertEmptyTable", tcra); err != nil {
+		return err
+	}
+
+	if err := dtuc.calcStepDuration(func() error { return r.SelectById(tableName, dataCount/2) }, "selectById"+testPrefix+"Table", tcra); err != nil {
+		return err
+	}
+
+	if err := dtuc.calcStepDuration(func() error { return r.SelectByConditions(tableName, selectConditions) }, "selectByConditions"+testPrefix+"Table", tcra); err != nil {
+		return err
+	}
+
+	// Inserts into full table
+	if dataCount >= 1000 {
+		for i := 1000; i >= 1; i /= 10 {
+			insertTestPrefix := strconv.FormatInt(int64(i), 10) + "x"
+			if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(i)) }, insertTestPrefix+"Insert"+testPrefix+"Table", tcra); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate"+testPrefix+"Table", tcra); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Method geerates data set for:

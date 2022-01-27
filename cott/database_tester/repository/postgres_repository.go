@@ -176,7 +176,7 @@ func (r *postgresDatabaseTesterRepository) Insert(tableName string, columns []st
 	return nil
 }
 
-func (r *postgresDatabaseTesterRepository) SelectById(tableName string, id uint64) error {
+func (r *postgresDatabaseTesterRepository) SelectById(tableName string, id int) error {
 	if r.db == nil {
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED
 	}
