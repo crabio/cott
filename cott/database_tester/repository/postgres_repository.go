@@ -76,7 +76,7 @@ func (r *postgresDatabaseTesterRepository) DropDatabase(name string) error {
 	}
 
 	var buf bytes.Buffer
-	buf.WriteString("DROP DATABASE ")
+	buf.WriteString("DROP DATABASE IF EXISTS ")
 	buf.WriteString(name)
 
 	_, err := r.db.Exec(buf.String())
@@ -136,7 +136,7 @@ func (r *postgresDatabaseTesterRepository) DropTable(name string) error {
 	}
 
 	var buf bytes.Buffer
-	buf.WriteString("DROP TABLE ")
+	buf.WriteString("DROP TABLE IF EXISTS ")
 	buf.WriteString(name)
 
 	_, err := r.db.Exec(buf.String())
