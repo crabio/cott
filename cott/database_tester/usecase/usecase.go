@@ -151,7 +151,9 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncateEmptyTable", tcra)
+	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncateEmptyTable", tcra); err != nil {
+		return
+	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsertEmptyTable", tcra); err != nil {
 		return
@@ -165,7 +167,9 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate1XTable", tcra)
+	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate1XTable", tcra); err != nil {
+		return
+	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsertEmptyTable", tcra); err != nil {
 		return
@@ -179,7 +183,9 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate10XTable", tcra)
+	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate10XTable", tcra); err != nil {
+		return
+	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsertEmptyTable", tcra); err != nil {
 		return
@@ -193,7 +199,9 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate100XTable", tcra)
+	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate100XTable", tcra); err != nil {
+		return
+	}
 
 	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsertEmptyTable", tcra); err != nil {
 		return
@@ -223,7 +231,9 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate2000XTable", tcra)
+	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate2000XTable", tcra); err != nil {
+		return
+	}
 
 	// Use for loop because postgress 65536 params
 	if err := dtuc.calcStepDuration(func() error {
@@ -261,7 +271,9 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate10000XTable", tcra)
+	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate10000XTable", tcra); err != nil {
+		return
+	}
 
 	if err := dtuc.calcStepDuration(func() error {
 		for i := 0; i < 100; i++ {
@@ -298,7 +310,9 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate100000XTable", tcra)
+	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate100000XTable", tcra); err != nil {
+		return
+	}
 
 	if err := dtuc.calcStepDuration(func() error {
 		for i := 0; i < 1000; i++ {
@@ -335,7 +349,9 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate1000000XTable", tcra)
+	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate1000000XTable", tcra); err != nil {
+		return
+	}
 
 	if err := dtuc.calcStepDuration(func() error {
 		for i := 0; i < 10000; i++ {
@@ -372,9 +388,13 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate10000000XTable", tcra)
+	if err := dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate10000000XTable", tcra); err != nil {
+		return
+	}
 
-	dtuc.calcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable", tcra)
+	if err := dtuc.calcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable", tcra); err != nil {
+		return
+	}
 }
 
 // Method geerates data set for:
