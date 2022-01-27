@@ -143,19 +143,7 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 			"f10 SMALLSERIAL",
 			"f11 SERIAL",
 		}
-		tableColumns = []string{
-			"f1",
-			"f2",
-			"f3",
-			"f4",
-			"f5",
-			"f6",
-			"f7",
-			"f8",
-			"f9",
-			"f10",
-			"f11",
-		}
+		tableColumns    = []string{"f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11"}
 		selctConditions = "f1>1 AND f2>1 AND f3 AND F5>0.5 AND f6>0.5 AND f7>1 AND f8>1 AND f9>1 AND f10>1 AND f11>1"
 	)
 
@@ -165,9 +153,7 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 
 	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncateEmptyTable", tcra)
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1))
-	}, "1xInsertEmptyTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsertEmptyTable", tcra); err != nil {
 		return
 	}
 
@@ -181,9 +167,7 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 
 	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate1XTable", tcra)
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(10))
-	}, "10xInsertEmptyTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsertEmptyTable", tcra); err != nil {
 		return
 	}
 
@@ -197,9 +181,7 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 
 	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate10XTable", tcra)
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(100))
-	}, "100xInsertEmptyTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsertEmptyTable", tcra); err != nil {
 		return
 	}
 
@@ -213,9 +195,7 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 
 	dtuc.calcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate100XTable", tcra)
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000))
-	}, "1000xInsertEmptyTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsertEmptyTable", tcra); err != nil {
 		return
 	}
 
@@ -227,27 +207,19 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1))
-	}, "1xInsert1000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsert1000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(10))
-	}, "10xInsert1000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsert1000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(100))
-	}, "100xInsert1000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsert1000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000))
-	}, "1000xInsert1000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsert1000xTable", tcra); err != nil {
 		return
 	}
 
@@ -273,27 +245,19 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1))
-	}, "1xInsert10000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsert10000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(10))
-	}, "10xInsert10000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsert10000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(100))
-	}, "100xInsert10000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsert10000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000))
-	}, "1000xInsert10000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsert10000xTable", tcra); err != nil {
 		return
 	}
 
@@ -318,27 +282,19 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1))
-	}, "1xInsert100000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsert100000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(10))
-	}, "10xInsert100000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsert100000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(100))
-	}, "100xInsert100000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsert100000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000))
-	}, "1000xInsert100000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsert100000xTable", tcra); err != nil {
 		return
 	}
 
@@ -363,27 +319,19 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1))
-	}, "1xInsert1000000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsert1000000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(10))
-	}, "10xInsert1000000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsert1000000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(100))
-	}, "100xInsert1000000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsert1000000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000))
-	}, "1000xInsert1000000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsert1000000xTable", tcra); err != nil {
 		return
 	}
 
@@ -408,27 +356,19 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1))
-	}, "1xInsert10000000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1)) }, "1xInsert10000000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(10))
-	}, "10xInsert10000000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(10)) }, "10xInsert10000000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(100))
-	}, "100xInsert10000000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(100)) }, "100xInsert10000000xTable", tcra); err != nil {
 		return
 	}
 
-	if err := dtuc.calcStepDuration(func() error {
-		return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000))
-	}, "1000xInsert10000000xTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(1000)) }, "1000xInsert10000000xTable", tcra); err != nil {
 		return
 	}
 
