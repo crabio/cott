@@ -3,11 +3,11 @@ package repository
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"strconv"
 	"time"
 
 	"github.com/iakrevetkho/components-tests/cott/domain"
+	"github.com/jmoiron/sqlx"
 
 	_ "github.com/lib/pq"
 )
@@ -15,7 +15,7 @@ import (
 const PING_TIMEOUT = 5 * time.Second
 
 type postgresDatabaseTesterRepository struct {
-	db       *sql.DB
+	db       *sqlx.DB
 	port     uint16
 	host     string
 	user     string
@@ -35,7 +35,7 @@ func NewPostgresDatabaseTesterRepository(port uint16, host, user, password strin
 
 func (r *postgresDatabaseTesterRepository) Open() error {
 	var err error
-	r.db, err = sql.Open("postgres", r.createConnString(r.port, r.host, r.user, r.password, r.dbname))
+	r.db, err = sqlx.Open("postgres", r.createConnString(r.port, r.host, r.user, r.password, r.dbname))
 	if err != nil {
 		return err
 	}
@@ -147,70 +147,29 @@ func (r *postgresDatabaseTesterRepository) DropTable(name string) error {
 	return nil
 }
 
-func (r *postgresDatabaseTesterRepository) SingleInsert(tableName string, columns []string, values []interface{}) error {
+func (r *postgresDatabaseTesterRepository) TruncateTable(name string) error {
 	if r.db == nil {
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED
 	}
 
 	var buf bytes.Buffer
-	buf.WriteString("INSERT INTO ")
-	buf.WriteString(tableName)
-	buf.WriteString(" (")
-	for i, column := range columns {
-		buf.WriteString(column)
-		if i < len(columns)-1 {
-			buf.WriteByte(',')
-		}
-	}
-	buf.WriteString(") VALUES (")
+	buf.WriteString("TRUNCATE TABLE ")
+	buf.WriteString(name)
 
-	for i := 0; i < len(columns); i++ {
-		buf.WriteByte('$')
-		buf.WriteString(strconv.FormatInt(int64(i+1), 10))
-		if i < len(columns)-1 {
-			buf.WriteByte(',')
-		}
-	}
-	buf.WriteByte(')')
-
-	if _, err := r.db.Exec(buf.String(), values...); err != nil {
+	_, err := r.db.Exec(buf.String())
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (r *postgresDatabaseTesterRepository) MultipleInsert(tableName string, columns []string, values []interface{}) error {
+func (r *postgresDatabaseTesterRepository) Insert(tableName string, columns []string, values []map[string]interface{}) error {
 	if r.db == nil {
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED
 	}
 
-	var buf bytes.Buffer
-	buf.WriteString("INSERT INTO ")
-	buf.WriteString(tableName)
-	buf.WriteString(" (")
-	for i, column := range columns {
-		buf.WriteString(column)
-		if i < len(columns)-1 {
-			buf.WriteByte(',')
-		}
-	}
-	buf.WriteString(") VALUES (")
-
-	for i := 0; i < len(columns); i++ {
-		buf.WriteByte('?')
-		if i < len(columns)-1 {
-			buf.WriteByte(',')
-		}
-	}
-	buf.WriteByte(')')
-
-	stmt, err := r.db.Prepare(buf.String())
-	if err != nil {
-		return err
-	}
-
-	if _, err := stmt.Exec(values...); err != nil {
+	if _, err := r.db.NamedExec(r.createInsertStatement(tableName, columns), values); err != nil {
 		return err
 	}
 
@@ -247,6 +206,31 @@ func (r *postgresDatabaseTesterRepository) createConnString(port uint16, host, u
 		buf.WriteString(dbname)
 	}
 	buf.WriteString(" sslmode=disable")
+
+	return buf.String()
+}
+
+func (r *postgresDatabaseTesterRepository) createInsertStatement(tableName string, columns []string) string {
+	var buf bytes.Buffer
+	buf.WriteString("INSERT INTO ")
+	buf.WriteString(tableName)
+	buf.WriteString(" (")
+	for i, column := range columns {
+		buf.WriteString(column)
+		if i < len(columns)-1 {
+			buf.WriteByte(',')
+		}
+	}
+	buf.WriteString(") VALUES (")
+
+	for i, column := range columns {
+		buf.WriteByte(':')
+		buf.WriteString(column)
+		if i < len(columns)-1 {
+			buf.WriteByte(',')
+		}
+	}
+	buf.WriteByte(')')
 
 	return buf.String()
 }

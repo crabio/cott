@@ -7,8 +7,8 @@ type DatabaseTesterRepository interface {
 	DropDatabase(name string) error
 	SwitchDatabase(name string) error
 	CreateTable(name string, fields []string) error
+	TruncateTable(name string) error
 	DropTable(name string) error
-	SingleInsert(tableName string, columns []string, values []interface{}) error
-	MultipleInsert(tableName string, columns []string, values []interface{}) error
+	Insert(tableName string, columns []string, values []map[string]interface{}) error
 	Close() error
 }
