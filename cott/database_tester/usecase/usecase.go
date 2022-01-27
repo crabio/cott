@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"math/rand"
-	"strconv"
 	"time"
 
 	"github.com/iakrevetkho/components-tests/cott/database_tester/repository"
@@ -63,9 +62,7 @@ func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulat
 		return nil
 	}
 
-	dtuc.testKeyValueTable(tcra, r)
-
-	dtuc.testMeasurmentsTable(tcra, r)
+	dtuc.testTable(tcra, r)
 
 	if err := r.SwitchDatabase(""); err != nil {
 		tcra.AddError(err.Error())
@@ -135,115 +132,153 @@ func (dtuc *databaseTesterUsecase) calcStepDuration(f func() error, name string,
 	return nil
 }
 
-func (dtuc *databaseTesterUsecase) testKeyValueTable(tcra *domain.TestCaseResultsAccumulator, r repository.DatabaseTesterRepository) {
+func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumulator, r repository.DatabaseTesterRepository) {
 	var (
-		keyValueTableName    = "key_value"
-		keyValueTableFields  = []string{"key VARCHAR(255)", "value VARCHAR(255)"}
-		keyValueTableColumns = []string{"key", "value"}
+		keyValueTableName   = "key_value"
+		keyValueTableFields = []string{
+			"f1 BIGINT",
+			"f2 BIGSERIAL",
+			"f3 BOOLEAN",
+			"f4 DATE",
+			"f5 FLOAT",
+			"f6 REAL",
+			"f7 INTEGER",
+			"f8 NUMERIC",
+			"f9 SMALLINT",
+			"f10 SMALLSERIAL",
+			"f11 SERIAL",
+		}
+		keyValueTableColumns = []string{
+			"f1",
+			"f2",
+			"f3",
+			"f4",
+			"f5",
+			"f6",
+			"f7",
+			"f8",
+			"f9",
+			"f10",
+			"f11",
+		}
 	)
 
-	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(keyValueTableName, keyValueTableFields) }, "createKeyValueTable", tcra); err != nil {
+	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(keyValueTableName, keyValueTableFields) }, "createTable", tcra); err != nil {
 		return
 	}
 
 	if err := dtuc.calcStepDuration(func() error {
-		return r.SingleInsert(keyValueTableName, keyValueTableColumns, []interface{}{"key", "value"})
-	}, "singleInsertKeyValueTable", tcra); err != nil {
+		return r.SingleInsert(keyValueTableName, keyValueTableColumns, dtuc.generateTableData(1))
+	}, "singleInsertTable", tcra); err != nil {
 		return
 	}
 
 	if err := dtuc.calcStepDuration(func() error {
 		for i := 0; i < 10; i++ {
-			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, []interface{}{"key", "value"}); err != nil {
+			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, dtuc.generateTableData(1)); err != nil {
 				return err
 			}
 		}
 		return nil
-	}, "10xInsertKeyValueTable", tcra); err != nil {
+	}, "10xsingleInsertKeyValueTable", tcra); err != nil {
 		return
 	}
 
 	if err := dtuc.calcStepDuration(func() error {
 		for i := 0; i < 100; i++ {
-			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, []interface{}{"key", "value"}); err != nil {
+			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, dtuc.generateTableData(1)); err != nil {
 				return err
 			}
 		}
 		return nil
-	}, "100xInsertKeyValueTable", tcra); err != nil {
+	}, "100xsingleInsertKeyValueTable", tcra); err != nil {
 		return
 	}
 
 	if err := dtuc.calcStepDuration(func() error {
 		for i := 0; i < 1000; i++ {
-			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, []interface{}{"key", "value"}); err != nil {
+			if err := r.SingleInsert(keyValueTableName, keyValueTableColumns, dtuc.generateTableData(1)); err != nil {
 				return err
 			}
 		}
 		return nil
-	}, "1000xInsertKeyValueTable", tcra); err != nil {
+	}, "1000xsingleInsertKeyValueTable", tcra); err != nil {
+		return
+	}
+
+	if err := dtuc.calcStepDuration(func() error {
+		if err := r.MultipleInsert(keyValueTableName, keyValueTableColumns, dtuc.generateTableData(10)); err != nil {
+			return err
+		}
+		return nil
+	}, "10xmultipleInsertKeyValueTable", tcra); err != nil {
+		return
+	}
+
+	if err := dtuc.calcStepDuration(func() error {
+		if err := r.MultipleInsert(keyValueTableName, keyValueTableColumns, dtuc.generateTableData(100)); err != nil {
+			return err
+		}
+		return nil
+	}, "100xmultipleInsertKeyValueTable", tcra); err != nil {
+		return
+	}
+
+	if err := dtuc.calcStepDuration(func() error {
+		if err := r.MultipleInsert(keyValueTableName, keyValueTableColumns, dtuc.generateTableData(1000)); err != nil {
+			return err
+		}
+		return nil
+	}, "1000xmultipleInsertKeyValueTable", tcra); err != nil {
 		return
 	}
 
 	dtuc.calcStepDuration(func() error { return r.DropTable(keyValueTableName) }, "dropKeyValueTable", tcra)
 }
 
-func (dtuc *databaseTesterUsecase) testMeasurmentsTable(tcra *domain.TestCaseResultsAccumulator, r repository.DatabaseTesterRepository) {
-	var (
-		measurmentsTableName        = "measurement"
-		measurmentsTableFieldsCount = 100
-		measurmentsTableFields      = []string{"id SERIAL PRIMARY KEY"}
-		measurmentsTableColumns     = []string{}
-		measurmentsTableData        = []interface{}{}
-	)
-	for i := 0; i < measurmentsTableFieldsCount; i++ {
-		measurmentsTableFields = append(measurmentsTableFields, "s"+strconv.FormatInt(int64(i), 10)+" REAL")
-		measurmentsTableColumns = append(measurmentsTableColumns, "s"+strconv.FormatInt(int64(i), 10))
-		measurmentsTableData = append(measurmentsTableData, rand.Float64())
+// Method geerates data set for:
+/*
+keyValueTableFields = []string{
+	"f1 BIGINT",
+	"f2 BIGSERIAL",
+	"f3 BOOLEAN",
+	"f4 DATE",
+	"f5 FLOAT",
+	"f6 REAL",
+	"f7 INTEGER",
+	"f8 NUMERIC",
+	"f9 SMALLINT",
+	"f10 SMALLSERIAL",
+	"f11 SERIAL",
+}
+*/
+func (dtuc *databaseTesterUsecase) generateTableData(count int) []interface{} {
+	var buf []interface{}
+
+	for i := 0; i < count; i++ {
+		// "f1 BIGINT",
+		buf = append(buf, rand.Int())
+		// "f2 BIGSERIAL",
+		buf = append(buf, rand.Uint64())
+		// "f3 BOOLEAN",
+		buf = append(buf, true)
+		// "f4 DATE",
+		buf = append(buf, time.Now())
+		// "f5 FLOAT",
+		buf = append(buf, rand.Float32())
+		// "f6 REAL",
+		buf = append(buf, rand.Float64())
+		// "f7 INTEGER",
+		buf = append(buf, rand.Int())
+		// "f8 NUMERIC",
+		buf = append(buf, rand.Int())
+		// "f9 SMALLINT",
+		buf = append(buf, rand.Intn(255))
+		// "f10 SMALLSERIAL",
+		buf = append(buf, rand.Intn(255))
+		// "f11 SERIAL",
+		buf = append(buf, rand.Uint32())
 	}
 
-	if err := dtuc.calcStepDuration(func() error { return r.CreateTable(measurmentsTableName, measurmentsTableFields) }, "createMeasurementsTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		return r.SingleInsert(measurmentsTableName, measurmentsTableColumns, measurmentsTableData)
-	}, "singleInsertMeasurementsTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 10; i++ {
-			if err := r.SingleInsert(measurmentsTableName, measurmentsTableColumns, measurmentsTableData); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "10xInsertMeasurementsTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 100; i++ {
-			if err := r.SingleInsert(measurmentsTableName, measurmentsTableColumns, measurmentsTableData); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "100xInsertMeasurementsTable", tcra); err != nil {
-		return
-	}
-
-	if err := dtuc.calcStepDuration(func() error {
-		for i := 0; i < 1000; i++ {
-			if err := r.SingleInsert(measurmentsTableName, measurmentsTableColumns, measurmentsTableData); err != nil {
-				return err
-			}
-		}
-		return nil
-	}, "1000xInsertMeasurementsTable", tcra); err != nil {
-		return
-	}
-
-	dtuc.calcStepDuration(func() error { return r.DropTable(measurmentsTableName) }, "dropMeasurementsTable", tcra)
+	return buf
 }
