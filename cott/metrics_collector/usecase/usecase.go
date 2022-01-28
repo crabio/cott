@@ -41,22 +41,12 @@ func (mcuc *metricsCollectorUsecase) CalcStepDuration(stepFunc func() error, ste
 }
 
 func (mcuc *metricsCollectorUsecase) GetStepContainerStats(stepFunc func() error, stepName string, containerID string) error {
-	statsCh, statsStopFunc, err := mcuc.cluc.GetContainerStats(containerID)
+	stats, err := mcuc.cluc.GetContainerStats(containerID)
 	if err != nil {
 		return err
 	}
 
-	// Collect stats
-	go func() {
-		for {
-			stats, more := <-statsCh
-			if !more {
-				logrus.Debug("stop collecting stats. channel closed")
-				return
-			}
-			logrus.WithField("stats", stats).Debug("new stats received")
-		}
-	}()
+	startCpuTotalUsage := stats.CPUStats.CPUUsage.TotalUsage
 
 	if err := stepFunc(); err != nil {
 		logrus.WithError(err).WithField("stepName", stepName).Warn("error on step execution")
@@ -64,10 +54,16 @@ func (mcuc *metricsCollectorUsecase) GetStepContainerStats(stepFunc func() error
 		return err
 	}
 
-	time.Sleep(10 * time.Second)
+	stats, err = mcuc.cluc.GetContainerStats(containerID)
+	if err != nil {
+		return err
+	}
 
-	logrus.Debug("stop collecting stats signal")
-	statsStopFunc()
+	resCpuTotalUsage := stats.CPUStats.CPUUsage.TotalUsage - startCpuTotalUsage
+	resMemUsage := stats.MemoryStats.Usage
+	resMaxMemUsage := stats.MemoryStats.MaxUsage
+
+	logrus.WithFields(logrus.Fields{"cpuUsage": resCpuTotalUsage, "resMemUsage": resMemUsage, "resMaxMemUsage": resMaxMemUsage}).Debug("result container usage")
 
 	return nil
 }

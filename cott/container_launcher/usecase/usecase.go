@@ -23,7 +23,8 @@ type ContainerLauncherUsecase interface {
 	StopContainer(id string) error
 	RemoveContainer(id string) error
 	// GetContainerStats get channel with container stats and cancel func for stopping receiving container stats
-	GetContainerStats(id string) (<-chan *types.Stats, context.CancelFunc, error)
+	GetContainerStats(id string) (*types.Stats, error)
+	GetContainerStatsStream(id string) (<-chan *types.Stats, context.CancelFunc, error)
 }
 
 type containerLauncherUsecase struct {
@@ -109,7 +110,27 @@ func (cluc *containerLauncherUsecase) RemoveContainer(id string) error {
 	return nil
 }
 
-func (cluc *containerLauncherUsecase) GetContainerStats(id string) (<-chan *types.Stats, context.CancelFunc, error) {
+func (cluc *containerLauncherUsecase) GetContainerStats(id string) (*types.Stats, error) {
+	statsResponse, err := cluc.cli.ContainerStats(context.Background(), id, false)
+	if err != nil {
+		return nil, err
+	}
+
+	statsBytes, err := io.ReadAll(statsResponse.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var stats types.Stats
+
+	if err := json.Unmarshal(statsBytes, &stats); err != nil {
+		return nil, err
+	}
+
+	return &stats, nil
+}
+
+func (cluc *containerLauncherUsecase) GetContainerStatsStream(id string) (<-chan *types.Stats, context.CancelFunc, error) {
 	ctx, ctxCancelFunc := context.WithCancel(context.Background())
 
 	statsResponse, err := cluc.cli.ContainerStats(ctx, id, true)
@@ -133,15 +154,15 @@ func (cluc *containerLauncherUsecase) GetContainerStats(id string) (<-chan *type
 				logrus.WithField("id", id).Debug("stop logging container stats. context done")
 				return
 			default:
-				var containerStats types.Stats
-				if err := decoder.Decode(&containerStats); err == io.EOF {
+				var stats types.Stats
+				if err := decoder.Decode(&stats); err == io.EOF {
 					logrus.WithField("id", id).Debug("stop logging container stats")
 					return
 				} else if err != nil {
 					ctxCancelFunc()
 					break
 				}
-				statsCh <- &containerStats
+				statsCh <- &stats
 			}
 		}
 	}()
