@@ -5,7 +5,7 @@ import "gonum.org/v1/gonum/stat"
 type TestCaseResultsAccumulator struct {
 	TestCase   *TestCase
 	MetricsMap map[MetricMeta][]float64
-	Error      *string
+	Errors     []string
 }
 
 func NewTestCaseResultsAccumulator(tc *TestCase) *TestCaseResultsAccumulator {
@@ -30,7 +30,7 @@ func (r *TestCaseResultsAccumulator) AddMetric(name string, uofp UnitOfMeasurePr
 }
 
 func (r *TestCaseResultsAccumulator) AddError(err string) {
-	r.Error = &err
+	r.Errors = append(r.Errors, err)
 }
 
 func (r *TestCaseResultsAccumulator) ToTestCaseResults() *TestCaseResults {
@@ -43,6 +43,6 @@ func (r *TestCaseResultsAccumulator) ToTestCaseResults() *TestCaseResults {
 	return &TestCaseResults{
 		TestCase: *r.TestCase,
 		Metrics:  metrics,
-		Error:    r.Error,
+		Errors:   r.Errors,
 	}
 }

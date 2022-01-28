@@ -5,10 +5,9 @@ import (
 )
 
 type Config struct {
-	Log                  LogConfig
-	Report               ReportConfig
-	DatabaseTesterConfig DatabaseTesterConfig
-	TestCases            []TestCase
+	Log       LogConfig
+	Report    ReportConfig
+	TestCases []TestCase
 }
 
 type LogConfig struct {
@@ -22,8 +21,4 @@ type LogConfig struct {
 
 type ReportConfig struct {
 	FilePath string `default:"report.json" env:"REPORT_FILE_PATH"`
-}
-
-type DatabaseTesterConfig struct {
-	DatabaseName string `default:"cott_db" env:"DATABASE_TESTER_DATABASE_NAME"`
 }

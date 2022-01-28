@@ -3,11 +3,11 @@ package repository
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"strconv"
 	"time"
 
 	"github.com/iakrevetkho/components-tests/cott/domain"
+	"github.com/jmoiron/sqlx"
 
 	_ "github.com/lib/pq"
 )
@@ -15,7 +15,7 @@ import (
 const PING_TIMEOUT = 5 * time.Second
 
 type postgresDatabaseTesterRepository struct {
-	db       *sql.DB
+	db       *sqlx.DB
 	port     uint16
 	host     string
 	user     string
@@ -35,7 +35,7 @@ func NewPostgresDatabaseTesterRepository(port uint16, host, user, password strin
 
 func (r *postgresDatabaseTesterRepository) Open() error {
 	var err error
-	r.db, err = sql.Open("postgres", r.createConnString(r.port, r.host, r.user, r.password, r.dbname))
+	r.db, err = sqlx.Open("postgres", r.createConnString(r.port, r.host, r.user, r.password, r.dbname))
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (r *postgresDatabaseTesterRepository) DropDatabase(name string) error {
 	}
 
 	var buf bytes.Buffer
-	buf.WriteString("DROP DATABASE ")
+	buf.WriteString("DROP DATABASE IF EXISTS ")
 	buf.WriteString(name)
 
 	_, err := r.db.Exec(buf.String())
@@ -105,7 +105,7 @@ func (r *postgresDatabaseTesterRepository) SwitchDatabase(name string) error {
 	return nil
 }
 
-func (r *postgresDatabaseTesterRepository) CreateTable(name string) error {
+func (r *postgresDatabaseTesterRepository) CreateTable(name string, fields []string) error {
 	if r.db == nil {
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED
 	}
@@ -114,7 +114,12 @@ func (r *postgresDatabaseTesterRepository) CreateTable(name string) error {
 	buf.WriteString("CREATE TABLE ")
 	buf.WriteString(name)
 	buf.WriteString(" (")
-	buf.WriteString("id SERIAL PRIMARY KEY")
+	for i, field := range fields {
+		buf.WriteString(field)
+		if i < len(fields)-1 {
+			buf.WriteByte(',')
+		}
+	}
 	buf.WriteString(");")
 
 	_, err := r.db.Exec(buf.String())
@@ -131,11 +136,83 @@ func (r *postgresDatabaseTesterRepository) DropTable(name string) error {
 	}
 
 	var buf bytes.Buffer
-	buf.WriteString("DROP TABLE ")
+	buf.WriteString("DROP TABLE IF EXISTS ")
 	buf.WriteString(name)
 
 	_, err := r.db.Exec(buf.String())
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *postgresDatabaseTesterRepository) TruncateTable(name string) error {
+	if r.db == nil {
+		return domain.CONNECTION_WAS_NOT_ESTABLISHED
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("TRUNCATE TABLE ")
+	buf.WriteString(name)
+
+	_, err := r.db.Exec(buf.String())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *postgresDatabaseTesterRepository) Insert(tableName string, columns []string, values []map[string]interface{}) error {
+	if r.db == nil {
+		return domain.CONNECTION_WAS_NOT_ESTABLISHED
+	}
+
+	if _, err := r.db.NamedExec(r.createInsertStatement(tableName, columns), values); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *postgresDatabaseTesterRepository) SelectById(tableName string, id int) error {
+	if r.db == nil {
+		return domain.CONNECTION_WAS_NOT_ESTABLISHED
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("SELECT * FROM ")
+	buf.WriteString(tableName)
+	buf.WriteString(" WHERE id=$1")
+
+	rows, err := r.db.Query(buf.String(), id)
+	if err != nil {
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *postgresDatabaseTesterRepository) SelectByConditions(tableName string, conditions string) error {
+	if r.db == nil {
+		return domain.CONNECTION_WAS_NOT_ESTABLISHED
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("SELECT * FROM ")
+	buf.WriteString(tableName)
+	buf.WriteString(" WHERE ")
+	buf.WriteString(conditions)
+
+	rows, err := r.db.Query(buf.String())
+	if err != nil {
+		return err
+	}
+	if err := rows.Close(); err != nil {
 		return err
 	}
 
@@ -172,6 +249,31 @@ func (r *postgresDatabaseTesterRepository) createConnString(port uint16, host, u
 		buf.WriteString(dbname)
 	}
 	buf.WriteString(" sslmode=disable")
+
+	return buf.String()
+}
+
+func (r *postgresDatabaseTesterRepository) createInsertStatement(tableName string, columns []string) string {
+	var buf bytes.Buffer
+	buf.WriteString("INSERT INTO ")
+	buf.WriteString(tableName)
+	buf.WriteString(" (")
+	for i, column := range columns {
+		buf.WriteString(column)
+		if i < len(columns)-1 {
+			buf.WriteByte(',')
+		}
+	}
+	buf.WriteString(") VALUES (")
+
+	for i, column := range columns {
+		buf.WriteByte(':')
+		buf.WriteString(column)
+		if i < len(columns)-1 {
+			buf.WriteByte(',')
+		}
+	}
+	buf.WriteByte(')')
 
 	return buf.String()
 }
