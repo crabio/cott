@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/iakrevetkho/components-tests/cott/domain"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,6 +23,8 @@ type ContainerLauncherUsecase interface {
 	LaunchContainer(image string, envVarMap map[string]string, port uint16) (*string, error)
 	StopContainer(id string) error
 	RemoveContainer(id string) error
+	// GetContainerStats get channel with container stats and channel for stopping receiving container stats
+	GetContainerStats(id string) (<-chan *types.Stats, <-chan struct{}, error)
 }
 
 type containerLauncherUsecase struct {
@@ -106,6 +110,51 @@ func (cluc *containerLauncherUsecase) RemoveContainer(id string) error {
 	logrus.WithField("id", id).Debug("container removed")
 
 	return nil
+}
+
+func (cluc *containerLauncherUsecase) GetContainerStats(id string) (<-chan *types.Stats, <-chan struct{}, error) {
+	stats, err := cluc.cli.ContainerStats(cluc.ctx, id, true)
+	if err != nil {
+		return nil, nil, err
+	}
+	logrus.WithField("id", id).Debug("start getting container stats")
+
+	statsCh := make(chan *types.Stats, 1)
+	stopCh := make(chan struct{}, 1)
+
+	// Goroutine for sending data from stats to channel
+	go func() {
+		for {
+			var statsJson []byte
+			if _, err := stats.Body.Read(statsJson); err != nil {
+				if err != io.EOF {
+					logrus.WithError(err).Error(domain.COULDNT_READ_CONTAINER_STATS)
+				}
+				stopCh <- struct{}{}
+				break
+			}
+
+			var stats types.Stats
+			if err := json.Unmarshal(statsJson, &stats); err != nil {
+				logrus.WithError(err).Error(domain.COULDNT_DECODE_CONTAINER_STATS)
+			}
+
+			statsCh <- &stats
+		}
+	}()
+
+	// Goroutine for closing stats channel
+	go func() {
+		for {
+			<-stopCh
+			if err := stats.Body.Close(); err != nil {
+				logrus.WithError(err).Error(domain.COULDNT_CLOSE_CONTAINER_STATS_READER)
+				break
+			}
+		}
+	}()
+
+	return statsCh, stopCh, nil
 }
 
 func (cluc *containerLauncherUsecase) convertEnvVarsMapToSlice(envVarMap map[string]string) []string {
