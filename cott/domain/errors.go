@@ -8,7 +8,5 @@ var (
 	CONNECTION_WAS_NOT_ESTABLISHED       = errors.New("connection wasn't established")
 	UNKNOWN_COMPONENT_FOR_TESTING        = errors.New("unknown component for testing")
 	NO_REQUIRED_ENV_VAR_KEY              = errors.New("couldn't find required env var for container")
-	COULDNT_READ_CONTAINER_STATS         = errors.New("couldn't read container stats")
-	COULDNT_DECODE_CONTAINER_STATS       = errors.New("couldn't decode containers stats JSON")
 	COULDNT_CLOSE_CONTAINER_STATS_READER = errors.New("couldn't close containers stats reader")
 )

@@ -17,7 +17,7 @@ const (
 )
 
 type DatabaseTesterUsecase interface {
-	RunCase(tcra *domain.TestCaseResultsAccumulator) error
+	RunCase(tcra *domain.TestCaseResultsAccumulator, containerId string) error
 }
 
 type databaseTesterUsecase struct {
@@ -32,13 +32,13 @@ func NewDatabaseTesterUsecase(cluc container_launcher.ContainerLauncherUsecase) 
 	return dtuc
 }
 
-func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulator) error {
+func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulator, containerId string) error {
 	r, err := dtuc.createDatabaseRepository(tcra.TestCase)
 	if err != nil {
 		return err
 	}
 
-	mcuc := metrics_collector.NewMetricsCollectorUsecase(tcra)
+	mcuc := metrics_collector.NewMetricsCollectorUsecase(tcra, dtuc.cluc)
 
 	if err := mcuc.CalcStepDuration(func() error { return r.Open() }, "openConnection"); err != nil {
 		return nil
@@ -73,7 +73,7 @@ func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulat
 		return nil
 	}
 
-	dtuc.testTable(mcuc, r)
+	dtuc.testTable(mcuc, r, containerId)
 
 	if err := r.SwitchDatabase(""); err != nil {
 		tcra.AddError(err.Error())
@@ -120,7 +120,7 @@ func (dtuc *databaseTesterUsecase) createDatabaseRepository(tc *domain.TestCase)
 	}
 }
 
-func (dtuc *databaseTesterUsecase) testTable(mcuc metrics_collector.MetricsCollectorUsecase, r repository.DatabaseTesterRepository) {
+func (dtuc *databaseTesterUsecase) testTable(mcuc metrics_collector.MetricsCollectorUsecase, r repository.DatabaseTesterRepository, containerId string) {
 	var (
 		tableName           = "test_table"
 		keyValueTableFields = []string{
@@ -137,25 +137,28 @@ func (dtuc *databaseTesterUsecase) testTable(mcuc metrics_collector.MetricsColle
 			"f10 SMALLSERIAL",
 			"f11 SERIAL",
 		}
-		tableColumns     = []string{"f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11"}
-		selectConditions = "f1>1 AND f2>1 AND f3 AND F5>0.5 AND f6>0.5 AND f7>1 AND f8>1 AND f9>1 AND f10>1 AND f11>1"
+		// tableColumns     = []string{"f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11"}
+		// selectConditions = "f1>1 AND f2>1 AND f3 AND F5>0.5 AND f6>0.5 AND f7>1 AND f8>1 AND f9>1 AND f10>1 AND f11>1"
 	)
 
 	if err := mcuc.CalcStepDuration(func() error { return r.CreateTable(tableName, keyValueTableFields) }, "createTable"); err != nil {
 		return
 	}
 
-	if err := mcuc.CalcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncateEmptyTable"); err != nil {
-		return
-	}
+	// if err := mcuc.CalcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncateEmptyTable"); err != nil {
+	// 	return
+	// }
 
-	for i := 1; i <= 10000000; i *= 10 {
-		if err := dtuc.testTableInsertSelect(mcuc, r, tableName, tableColumns, selectConditions, i); err != nil {
-			return
-		}
-	}
+	// for i := 1; i <= 10000000; i *= 10 {
+	// 	if err := dtuc.testTableInsertSelect(mcuc, r, tableName, tableColumns, selectConditions, i); err != nil {
+	// 		return
+	// 	}
+	// }
 
-	if err := mcuc.CalcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable"); err != nil {
+	// if err := mcuc.CalcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable"); err != nil {
+	// 	return
+	// }
+	if err := mcuc.GetStepContainerStats(func() error { return r.DropTable(tableName) }, "dropTable", containerId); err != nil {
 		return
 	}
 }

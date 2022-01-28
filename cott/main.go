@@ -40,7 +40,7 @@ func main() {
 		logrus.WithError(err).Fatal(domain.COULDNT_INIT_CONTAINER_LAUNCHER)
 	}
 
-	dtuc := dt_usecase.NewDatabaseTesterUsecase()
+	dtuc := dt_usecase.NewDatabaseTesterUsecase(cluc)
 
 	tuc := tester_usecase.NewTesterUsecase(cluc, dtuc)
 
