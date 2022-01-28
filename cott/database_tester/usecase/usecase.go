@@ -8,6 +8,7 @@ import (
 	container_launcher "github.com/iakrevetkho/components-tests/cott/container_launcher/usecase"
 	"github.com/iakrevetkho/components-tests/cott/database_tester/repository"
 	"github.com/iakrevetkho/components-tests/cott/domain"
+	metrics_collector "github.com/iakrevetkho/components-tests/cott/metrics_collector/usecase"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,12 +38,14 @@ func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulat
 		return err
 	}
 
-	if err := tcra.CalcStepDuration(func() error { return r.Open() }, "openConnection"); err != nil {
+	mcuc := metrics_collector.NewMetricsCollectorUsecase(tcra)
+
+	if err := mcuc.CalcStepDuration(func() error { return r.Open() }, "openConnection"); err != nil {
 		return nil
 	}
 
 	// Await for DB ready
-	if err := tcra.CalcStepDuration(func() error {
+	if err := mcuc.CalcStepDuration(func() error {
 		// await 30 second
 		for i := 0; i < 300; i++ {
 			if err := r.Ping(); err != nil {
@@ -62,26 +65,26 @@ func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulat
 		logrus.WithError(err).Debug("couldn't drop database")
 	}
 
-	if err := tcra.CalcStepDuration(func() error { return r.CreateDatabase(dtuc.databaseName) }, "createDatabase"); err != nil {
+	if err := mcuc.CalcStepDuration(func() error { return r.CreateDatabase(dtuc.databaseName) }, "createDatabase"); err != nil {
 		return nil
 	}
 
-	if err := tcra.CalcStepDuration(func() error { return r.SwitchDatabase(dtuc.databaseName) }, "switchDatabase"); err != nil {
+	if err := mcuc.CalcStepDuration(func() error { return r.SwitchDatabase(dtuc.databaseName) }, "switchDatabase"); err != nil {
 		return nil
 	}
 
-	dtuc.testTable(tcra, r)
+	dtuc.testTable(mcuc, r)
 
 	if err := r.SwitchDatabase(""); err != nil {
 		tcra.AddError(err.Error())
 		return nil
 	}
 
-	if err := tcra.CalcStepDuration(func() error { return r.DropDatabase(dtuc.databaseName) }, "dropDatabase"); err != nil {
+	if err := mcuc.CalcStepDuration(func() error { return r.DropDatabase(dtuc.databaseName) }, "dropDatabase"); err != nil {
 		return nil
 	}
 
-	if err := tcra.CalcStepDuration(func() error { return r.Close() }, "closeConnection"); err != nil {
+	if err := mcuc.CalcStepDuration(func() error { return r.Close() }, "closeConnection"); err != nil {
 		return nil
 	}
 
@@ -117,7 +120,7 @@ func (dtuc *databaseTesterUsecase) createDatabaseRepository(tc *domain.TestCase)
 	}
 }
 
-func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumulator, r repository.DatabaseTesterRepository) {
+func (dtuc *databaseTesterUsecase) testTable(mcuc metrics_collector.MetricsCollectorUsecase, r repository.DatabaseTesterRepository) {
 	var (
 		tableName           = "test_table"
 		keyValueTableFields = []string{
@@ -138,29 +141,29 @@ func (dtuc *databaseTesterUsecase) testTable(tcra *domain.TestCaseResultsAccumul
 		selectConditions = "f1>1 AND f2>1 AND f3 AND F5>0.5 AND f6>0.5 AND f7>1 AND f8>1 AND f9>1 AND f10>1 AND f11>1"
 	)
 
-	if err := tcra.CalcStepDuration(func() error { return r.CreateTable(tableName, keyValueTableFields) }, "createTable"); err != nil {
+	if err := mcuc.CalcStepDuration(func() error { return r.CreateTable(tableName, keyValueTableFields) }, "createTable"); err != nil {
 		return
 	}
 
-	if err := tcra.CalcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncateEmptyTable"); err != nil {
+	if err := mcuc.CalcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncateEmptyTable"); err != nil {
 		return
 	}
 
 	for i := 1; i <= 10000000; i *= 10 {
-		if err := dtuc.testTableInsertSelect(tcra, r, tableName, tableColumns, selectConditions, i); err != nil {
+		if err := dtuc.testTableInsertSelect(mcuc, r, tableName, tableColumns, selectConditions, i); err != nil {
 			return
 		}
 	}
 
-	if err := tcra.CalcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable"); err != nil {
+	if err := mcuc.CalcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable"); err != nil {
 		return
 	}
 }
 
-func (dtuc *databaseTesterUsecase) testTableInsertSelect(tcra *domain.TestCaseResultsAccumulator, r repository.DatabaseTesterRepository, tableName string, tableColumns []string, selectConditions string, dataCount int) error {
+func (dtuc *databaseTesterUsecase) testTableInsertSelect(mcuc metrics_collector.MetricsCollectorUsecase, r repository.DatabaseTesterRepository, tableName string, tableColumns []string, selectConditions string, dataCount int) error {
 	testPrefix := strconv.FormatInt(int64(dataCount), 10) + "x"
 
-	if err := tcra.CalcStepDuration(func() error {
+	if err := mcuc.CalcStepDuration(func() error {
 		if dataCount > 1000 {
 			// Postgres bulk insert support max 65536 params
 			// Split insert by 1000 rows
@@ -178,11 +181,11 @@ func (dtuc *databaseTesterUsecase) testTableInsertSelect(tcra *domain.TestCaseRe
 		return err
 	}
 
-	if err := tcra.CalcStepDuration(func() error { return r.SelectById(tableName, dataCount/2) }, "selectById"+testPrefix+"Table"); err != nil {
+	if err := mcuc.CalcStepDuration(func() error { return r.SelectById(tableName, dataCount/2) }, "selectById"+testPrefix+"Table"); err != nil {
 		return err
 	}
 
-	if err := tcra.CalcStepDuration(func() error { return r.SelectByConditions(tableName, selectConditions) }, "selectByConditions"+testPrefix+"Table"); err != nil {
+	if err := mcuc.CalcStepDuration(func() error { return r.SelectByConditions(tableName, selectConditions) }, "selectByConditions"+testPrefix+"Table"); err != nil {
 		return err
 	}
 
@@ -190,13 +193,13 @@ func (dtuc *databaseTesterUsecase) testTableInsertSelect(tcra *domain.TestCaseRe
 	if dataCount >= 1000 {
 		for i := 1000; i >= 1; i /= 10 {
 			insertTestPrefix := strconv.FormatInt(int64(i), 10) + "x"
-			if err := tcra.CalcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(i)) }, insertTestPrefix+"Insert"+testPrefix+"Table"); err != nil {
+			if err := mcuc.CalcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(i)) }, insertTestPrefix+"Insert"+testPrefix+"Table"); err != nil {
 				return err
 			}
 		}
 	}
 
-	if err := tcra.CalcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate"+testPrefix+"Table"); err != nil {
+	if err := mcuc.CalcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate"+testPrefix+"Table"); err != nil {
 		return err
 	}
 
