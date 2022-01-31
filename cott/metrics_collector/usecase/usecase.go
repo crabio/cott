@@ -44,8 +44,16 @@ func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseSte
 
 	startCpuTotalUsage := stats.CPUStats.CPUUsage.TotalUsage
 	startMemUsage := stats.MemoryStats.Usage
-	startStorageReadUsage := stats.StorageStats.ReadSizeBytes
-	startStorageWriteUsage := stats.StorageStats.WriteSizeBytes
+
+	var startStorageReadUsage, startStorageWriteUsage uint64
+	for _, blkIoStats := range stats.BlkioStats.IoServiceBytesRecursive {
+		switch blkIoStats.Op {
+		case "Read":
+			startStorageReadUsage = blkIoStats.Value
+		case "Write":
+			startStorageWriteUsage = blkIoStats.Value
+		}
+	}
 	startNetworkRxUsage := stats.Networks[DEFAULT_NETWORK].RxBytes
 	startNetworkTxUsage := stats.Networks[DEFAULT_NETWORK].TxBytes
 
@@ -64,11 +72,22 @@ func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseSte
 		return err
 	}
 
+	var resStorageReadUsage, resStorageWriteUsage uint64
+	for _, blkIoStats := range stats.BlkioStats.IoServiceBytesRecursive {
+		switch blkIoStats.Op {
+		case "Read":
+			resStorageReadUsage = blkIoStats.Value - startStorageReadUsage
+		case "Write":
+			resStorageWriteUsage = blkIoStats.Value - startStorageWriteUsage
+		}
+	}
+
+	logrus.WithField("stats", stats).Debug("collected metrics")
 	tcsra.AddMetric(domain.MetricMeta_CpuUsage, float64(stats.CPUStats.CPUUsage.TotalUsage-startCpuTotalUsage))
 	tcsra.AddMetric(domain.MetricMeta_MemoryUsage, float64(stats.MemoryStats.Usage))
 	tcsra.AddMetric(domain.MetricMeta_MemoryUsageDiff, float64(stats.MemoryStats.Usage-startMemUsage))
-	tcsra.AddMetric(domain.MetricMeta_StorageReadUsage, float64(stats.StorageStats.ReadSizeBytes-startStorageReadUsage))
-	tcsra.AddMetric(domain.MetricMeta_StorageWriteUsage, float64(stats.StorageStats.WriteSizeBytes-startStorageWriteUsage))
+	tcsra.AddMetric(domain.MetricMeta_StorageReadUsage, float64(resStorageReadUsage))
+	tcsra.AddMetric(domain.MetricMeta_StorageWriteUsage, float64(resStorageWriteUsage))
 	tcsra.AddMetric(domain.MetricMeta_NetworkReceiveUsage, float64(stats.Networks[DEFAULT_NETWORK].RxBytes-startNetworkRxUsage))
 	tcsra.AddMetric(domain.MetricMeta_NetworkSendUsage, float64(stats.Networks[DEFAULT_NETWORK].TxBytes-startNetworkTxUsage))
 
