@@ -29,8 +29,6 @@ func NewMetricsCollectorUsecase(tcra *domain.TestCaseResultsAccumulator, cluc co
 }
 
 func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseStep) error {
-	metricsMap := make(map[domain.MetricMeta]float64)
-
 	tcsra := new(domain.TestCaseStepResultsAccumulator)
 
 	stats, err := mcuc.cluc.GetContainerStats(step.ContainerID)
@@ -51,24 +49,20 @@ func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseSte
 		tcsra.AddError(err.Error())
 		return err
 	}
-	metricsMap[domain.MetricMeta_Duration] = float64(time.Since(startTime).Microseconds())
+	tcsra.AddMetric(domain.MetricMeta_Duration, float64(time.Since(startTime).Microseconds()))
 
 	stats, err = mcuc.cluc.GetContainerStats(step.ContainerID)
 	if err != nil {
 		return err
 	}
 
-	metricsMap[domain.MetricMeta_CpuUsage] = float64(stats.CPUStats.CPUUsage.TotalUsage - startCpuTotalUsage)
-	metricsMap[domain.MetricMeta_MemoryUsage] = float64(stats.MemoryStats.Usage)
-	metricsMap[domain.MetricMeta_MemoryUsageDiff] = float64(stats.MemoryStats.Usage - startMemUsage)
-	metricsMap[domain.MetricMeta_StorageReadUsage] = float64(stats.StorageStats.ReadSizeBytes - startStorageReadUsage)
-	metricsMap[domain.MetricMeta_StorageWriteUsage] = float64(stats.StorageStats.WriteSizeBytes - startStorageWriteUsage)
-	metricsMap[domain.MetricMeta_NetworkReceiveUsage] = float64(stats.Networks[DEFAULT_NETWORK].RxBytes - startNetworkRxUsage)
-	metricsMap[domain.MetricMeta_NetworkSendUsage] = float64(stats.Networks[DEFAULT_NETWORK].TxBytes - startNetworkTxUsage)
-
-	for _, metricMeta := range step.ContainerMetrics {
-		tcsra.AddMetric(metricMeta, metricsMap[*metricMeta])
-	}
+	tcsra.AddMetric(domain.MetricMeta_CpuUsage, float64(stats.CPUStats.CPUUsage.TotalUsage-startCpuTotalUsage))
+	tcsra.AddMetric(domain.MetricMeta_MemoryUsage, float64(stats.MemoryStats.Usage))
+	tcsra.AddMetric(domain.MetricMeta_MemoryUsageDiff, float64(stats.MemoryStats.Usage-startMemUsage))
+	tcsra.AddMetric(domain.MetricMeta_StorageReadUsage, float64(stats.StorageStats.ReadSizeBytes-startStorageReadUsage))
+	tcsra.AddMetric(domain.MetricMeta_StorageWriteUsage, float64(stats.StorageStats.WriteSizeBytes-startStorageWriteUsage))
+	tcsra.AddMetric(domain.MetricMeta_NetworkReceiveUsage, float64(stats.Networks[DEFAULT_NETWORK].RxBytes-startNetworkRxUsage))
+	tcsra.AddMetric(domain.MetricMeta_NetworkSendUsage, float64(stats.Networks[DEFAULT_NETWORK].TxBytes-startNetworkTxUsage))
 
 	return nil
 }

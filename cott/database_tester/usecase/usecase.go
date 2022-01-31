@@ -41,12 +41,12 @@ func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulat
 	mcuc := metrics_collector.NewMetricsCollectorUsecase(tcra, dtuc.cluc)
 
 	step := &domain.TestCaseStep{Name: "openConnection", StepFunc: func() error { return r.Open() }}
-	if err := mcuc.CalcStepDuration(step); err != nil {
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return nil
 	}
 
 	// Await for DB ready
-	if err := mcuc.CalcStepDuration(func() error {
+	step = &domain.TestCaseStep{Name: "startUp", StepFunc: func() error {
 		// await 30 second
 		for i := 0; i < 300; i++ {
 			if err := r.Ping(); err != nil {
@@ -57,7 +57,8 @@ func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulat
 			}
 		}
 		return domain.CONNECTION_WAS_NOT_ESTABLISHED
-	}, "startUp"); err != nil {
+	}}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		logrus.WithError(err).Debug("couldn't ping database")
 		time.Sleep(time.Second)
 	}
@@ -66,26 +67,29 @@ func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulat
 		logrus.WithError(err).Debug("couldn't drop database")
 	}
 
-	if err := mcuc.CalcStepDuration(func() error { return r.CreateDatabase(dtuc.databaseName) }, "createDatabase"); err != nil {
+	step = &domain.TestCaseStep{Name: "createDatabase", StepFunc: func() error { return r.CreateDatabase(dtuc.databaseName) }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return nil
 	}
 
-	if err := mcuc.CalcStepDuration(func() error { return r.SwitchDatabase(dtuc.databaseName) }, "switchDatabase"); err != nil {
+	step = &domain.TestCaseStep{Name: "switchDatabase", StepFunc: func() error { return r.SwitchDatabase(dtuc.databaseName) }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return nil
 	}
 
 	dtuc.testTable(mcuc, r, containerId)
 
 	if err := r.SwitchDatabase(""); err != nil {
-		tcra.AddError(err.Error())
+		return err
+	}
+
+	step = &domain.TestCaseStep{Name: "dropDatabase", StepFunc: func() error { return r.DropDatabase(dtuc.databaseName) }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return nil
 	}
 
-	if err := mcuc.CalcStepDuration(func() error { return r.DropDatabase(dtuc.databaseName) }, "dropDatabase"); err != nil {
-		return nil
-	}
-
-	if err := mcuc.CalcStepDuration(func() error { return r.Close() }, "closeConnection"); err != nil {
+	step = &domain.TestCaseStep{Name: "closeConnection", StepFunc: func() error { return r.Close() }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return nil
 	}
 
@@ -138,28 +142,33 @@ func (dtuc *databaseTesterUsecase) testTable(mcuc metrics_collector.MetricsColle
 			"f10 SMALLSERIAL",
 			"f11 SERIAL",
 		}
-		// tableColumns     = []string{"f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11"}
-		// selectConditions = "f1>1 AND f2>1 AND f3 AND F5>0.5 AND f6>0.5 AND f7>1 AND f8>1 AND f9>1 AND f10>1 AND f11>1"
+		tableColumns     = []string{"f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11"}
+		selectConditions = "f1>1 AND f2>1 AND f3 AND F5>0.5 AND f6>0.5 AND f7>1 AND f8>1 AND f9>1 AND f10>1 AND f11>1"
 	)
 
-	if err := mcuc.CalcStepDuration(func() error { return r.CreateTable(tableName, keyValueTableFields) }, "createTable"); err != nil {
+	step := &domain.TestCaseStep{Name: "createTable", StepFunc: func() error { return r.CreateTable(tableName, keyValueTableFields) }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return
 	}
 
-	// if err := mcuc.CalcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncateEmptyTable"); err != nil {
-	// 	return
-	// }
+	step = &domain.TestCaseStep{Name: "truncateEmptyTable", StepFunc: func() error { return r.TruncateTable(tableName) }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
+		return
+	}
 
-	// for i := 1; i <= 10000000; i *= 10 {
-	// 	if err := dtuc.testTableInsertSelect(mcuc, r, tableName, tableColumns, selectConditions, i); err != nil {
-	// 		return
-	// 	}
-	// }
+	for i := 1; i <= 10000000; i *= 10 {
+		if err := dtuc.testTableInsertSelect(mcuc, r, tableName, tableColumns, selectConditions, i); err != nil {
+			return
+		}
+	}
 
-	// if err := mcuc.CalcStepDuration(func() error { return r.DropTable(tableName) }, "dropTable"); err != nil {
-	// 	return
-	// }
-	if err := mcuc.GetStepContainerStats(func() error { return r.DropTable(tableName) }, "dropTable", containerId); err != nil {
+	step = &domain.TestCaseStep{Name: "dropTable", StepFunc: func() error { return r.DropTable(tableName) }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
+		return
+	}
+
+	step = &domain.TestCaseStep{Name: "dropTable", StepFunc: func() error { return r.DropTable(tableName) }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return
 	}
 }
@@ -167,7 +176,7 @@ func (dtuc *databaseTesterUsecase) testTable(mcuc metrics_collector.MetricsColle
 func (dtuc *databaseTesterUsecase) testTableInsertSelect(mcuc metrics_collector.MetricsCollectorUsecase, r repository.DatabaseTesterRepository, tableName string, tableColumns []string, selectConditions string, dataCount int) error {
 	testPrefix := strconv.FormatInt(int64(dataCount), 10) + "x"
 
-	if err := mcuc.CalcStepDuration(func() error {
+	step := &domain.TestCaseStep{Name: testPrefix + "InsertEmptyTable", StepFunc: func() error {
 		if dataCount > 1000 {
 			// Postgres bulk insert support max 65536 params
 			// Split insert by 1000 rows
@@ -181,15 +190,18 @@ func (dtuc *databaseTesterUsecase) testTableInsertSelect(mcuc metrics_collector.
 		}
 
 		return nil
-	}, testPrefix+"InsertEmptyTable"); err != nil {
+	}}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return err
 	}
 
-	if err := mcuc.CalcStepDuration(func() error { return r.SelectById(tableName, dataCount/2) }, "selectById"+testPrefix+"Table"); err != nil {
+	step = &domain.TestCaseStep{Name: "selectById" + testPrefix + "Table", StepFunc: func() error { return r.SelectById(tableName, dataCount/2) }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return err
 	}
 
-	if err := mcuc.CalcStepDuration(func() error { return r.SelectByConditions(tableName, selectConditions) }, "selectByConditions"+testPrefix+"Table"); err != nil {
+	step = &domain.TestCaseStep{Name: "selectByConditions" + testPrefix + "Table", StepFunc: func() error { return r.SelectByConditions(tableName, selectConditions) }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return err
 	}
 
@@ -197,13 +209,16 @@ func (dtuc *databaseTesterUsecase) testTableInsertSelect(mcuc metrics_collector.
 	if dataCount >= 1000 {
 		for i := 1000; i >= 1; i /= 10 {
 			insertTestPrefix := strconv.FormatInt(int64(i), 10) + "x"
-			if err := mcuc.CalcStepDuration(func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(i)) }, insertTestPrefix+"Insert"+testPrefix+"Table"); err != nil {
+
+			step = &domain.TestCaseStep{Name: insertTestPrefix + "Insert" + testPrefix + "Table", StepFunc: func() error { return r.Insert(tableName, tableColumns, dtuc.generateTableData(i)) }}
+			if err := mcuc.CollectStepMetrics(step); err != nil {
 				return err
 			}
 		}
 	}
 
-	if err := mcuc.CalcStepDuration(func() error { return r.TruncateTable(tableName) }, "truncate"+testPrefix+"Table"); err != nil {
+	step = &domain.TestCaseStep{Name: "truncate" + testPrefix + "Table", StepFunc: func() error { return r.TruncateTable(tableName) }}
+	if err := mcuc.CollectStepMetrics(step); err != nil {
 		return err
 	}
 
