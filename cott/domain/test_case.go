@@ -14,6 +14,7 @@ type TestCase struct {
 	Port          uint16            `json:"port"`
 	EnvVars       map[string]string `json:"env-vars"`
 	Accumulations uint16
+	TestCaseSteps []TestCaseStep `json:"steps"`
 }
 
 func (tc *TestCase) GetAccumulationsCount() uint16 {

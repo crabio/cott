@@ -40,7 +40,8 @@ func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulat
 
 	mcuc := metrics_collector.NewMetricsCollectorUsecase(tcra, dtuc.cluc)
 
-	if err := mcuc.CalcStepDuration(func() error { return r.Open() }, "openConnection"); err != nil {
+	step := &domain.TestCaseStep{Name: "openConnection", StepFunc: func() error { return r.Open() }}
+	if err := mcuc.CalcStepDuration(step); err != nil {
 		return nil
 	}
 

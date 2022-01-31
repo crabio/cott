@@ -8,11 +8,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const DEFAULT_NETWORK = "eth0"
+const (
+	DEFAULT_NETWORK = "eth0"
+)
 
 type MetricsCollectorUsecase interface {
-	CalcStepDuration(stepFunc func() error, stepName string) error
-	GetStepContainerStats(stepFunc func() error, stepName string, containerID string) error
+	CollectStepMetrics(step *domain.TestCaseStep) error
 }
 
 type metricsCollectorUsecase struct {
@@ -27,61 +28,47 @@ func NewMetricsCollectorUsecase(tcra *domain.TestCaseResultsAccumulator, cluc co
 	return mcuc
 }
 
-// TODO Create global method
+func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseStep) error {
+	metricsMap := make(map[domain.MetricMeta]float64)
 
-func (mcuc *metricsCollectorUsecase) CalcStepDuration(stepFunc func() error, stepName string) error {
-	start := time.Now()
-	if err := stepFunc(); err != nil {
-		logrus.WithError(err).WithField("stepName", stepName).Warn("error on step execution")
-		mcuc.tcra.AddError(stepName + ". " + err.Error())
-		return err
-	}
-	duration := time.Since(start)
-	logrus.WithFields(logrus.Fields{"duration": duration, "stepName": stepName}).Debug("step finished")
-	mcuc.tcra.AddMetric(stepName+"Duration", domain.UnitOfMeasurePrefix_Micro, domain.UnitOfMeasure_Second, float64(duration.Microseconds()))
-	return nil
-}
+	tcsra := new(domain.TestCaseStepResultsAccumulator)
 
-func (mcuc *metricsCollectorUsecase) GetStepContainerStats(stepFunc func() error, stepName string, containerID string) error {
-	stats, err := mcuc.cluc.GetContainerStats(containerID)
+	stats, err := mcuc.cluc.GetContainerStats(step.ContainerID)
 	if err != nil {
 		return err
 	}
 
 	startCpuTotalUsage := stats.CPUStats.CPUUsage.TotalUsage
+	startMemUsage := stats.MemoryStats.Usage
 	startStorageReadUsage := stats.StorageStats.ReadSizeBytes
 	startStorageWriteUsage := stats.StorageStats.WriteSizeBytes
 	startNetworkRxUsage := stats.Networks[DEFAULT_NETWORK].RxBytes
 	startNetworkTxUsage := stats.Networks[DEFAULT_NETWORK].TxBytes
 
-	if err := stepFunc(); err != nil {
-		logrus.WithError(err).WithField("stepName", stepName).Warn("error on step execution")
-		mcuc.tcra.AddError(stepName + ". " + err.Error())
+	startTime := time.Now()
+	if err := step.StepFunc(); err != nil {
+		logrus.WithError(err).WithField("step", step).Warn("error on step execution")
+		tcsra.AddError(err.Error())
 		return err
 	}
+	metricsMap[domain.MetricMeta_Duration] = float64(time.Since(startTime).Microseconds())
 
-	stats, err = mcuc.cluc.GetContainerStats(containerID)
+	stats, err = mcuc.cluc.GetContainerStats(step.ContainerID)
 	if err != nil {
 		return err
 	}
 
-	resCpuTotalUsage := stats.CPUStats.CPUUsage.TotalUsage - startCpuTotalUsage
-	resMemUsage := stats.MemoryStats.Usage
-	resMaxMemUsage := stats.MemoryStats.MaxUsage
-	resStorageReadUsage := stats.StorageStats.ReadSizeBytes - startStorageReadUsage
-	resStorageWriteUsage := stats.StorageStats.WriteSizeBytes - startStorageWriteUsage
-	resNetworkRxUsage := stats.Networks[DEFAULT_NETWORK].RxBytes - startNetworkRxUsage
-	resNetworkTxUsage := stats.Networks[DEFAULT_NETWORK].TxBytes - startNetworkTxUsage
+	metricsMap[domain.MetricMeta_CpuUsage] = float64(stats.CPUStats.CPUUsage.TotalUsage - startCpuTotalUsage)
+	metricsMap[domain.MetricMeta_MemoryUsage] = float64(stats.MemoryStats.Usage)
+	metricsMap[domain.MetricMeta_MemoryUsageDiff] = float64(stats.MemoryStats.Usage - startMemUsage)
+	metricsMap[domain.MetricMeta_StorageReadUsage] = float64(stats.StorageStats.ReadSizeBytes - startStorageReadUsage)
+	metricsMap[domain.MetricMeta_StorageWriteUsage] = float64(stats.StorageStats.WriteSizeBytes - startStorageWriteUsage)
+	metricsMap[domain.MetricMeta_NetworkReceiveUsage] = float64(stats.Networks[DEFAULT_NETWORK].RxBytes - startNetworkRxUsage)
+	metricsMap[domain.MetricMeta_NetworkSendUsage] = float64(stats.Networks[DEFAULT_NETWORK].TxBytes - startNetworkTxUsage)
 
-	logrus.WithFields(logrus.Fields{
-		"cpuUsage":             resCpuTotalUsage,
-		"resMemUsage":          resMemUsage,
-		"resMaxMemUsage":       resMaxMemUsage,
-		"resStorageReadUsage":  resStorageReadUsage,
-		"resStorageWriteUsage": resStorageWriteUsage,
-		"resNetworkRxUsage":    resNetworkRxUsage,
-		"resNetworkTxUsage":    resNetworkTxUsage,
-	}).Debug("result container usage")
+	for _, metricMeta := range step.ContainerMetrics {
+		tcsra.AddMetric(metricMeta, metricsMap[*metricMeta])
+	}
 
 	return nil
 }
