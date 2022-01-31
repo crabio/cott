@@ -32,8 +32,6 @@ func NewMetricsCollectorUsecase(tcra *domain.TestCaseResultsAccumulator, cluc co
 
 // TODO Refactor float64 onto interface{}
 func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseStep) error {
-	logrus.WithField("stepName", step.Name).Debug("collect test case step metrics")
-
 	tcsra := domain.NewTestCaseStepResultsAccumulator(step)
 
 	stats, err := mcuc.cluc.GetContainerStats(mcuc.containerId)
@@ -45,7 +43,6 @@ func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseSte
 
 	startCpuTotalUsage := stats.CPUStats.CPUUsage.TotalUsage
 	startMemUsage := stats.MemoryStats.Usage
-	logrus.WithField("value", startMemUsage).Debug("startMemUsage")
 
 	var startStorageReadUsage, startStorageWriteUsage uint64
 	for _, blkIoStats := range stats.BlkioStats.IoServiceBytesRecursive {
@@ -84,8 +81,6 @@ func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseSte
 		}
 	}
 
-	logrus.WithField("value", stats.MemoryStats.Usage).Debug("endMemUsage")
-
 	tcsra.AddMetric(domain.MetricMeta_CpuUsage, float64(stats.CPUStats.CPUUsage.TotalUsage)-float64(startCpuTotalUsage))
 	tcsra.AddMetric(domain.MetricMeta_MemoryUsage, float64(stats.MemoryStats.Usage))
 	tcsra.AddMetric(domain.MetricMeta_MemoryUsageDiff, float64(stats.MemoryStats.Usage)-float64(startMemUsage))
@@ -94,6 +89,5 @@ func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseSte
 	tcsra.AddMetric(domain.MetricMeta_NetworkReceiveUsage, float64(stats.Networks[DEFAULT_NETWORK].RxBytes)-float64(startNetworkRxUsage))
 	tcsra.AddMetric(domain.MetricMeta_NetworkSendUsage, float64(stats.Networks[DEFAULT_NETWORK].TxBytes)-float64(startNetworkTxUsage))
 
-	logrus.WithField("name", step.Name).Debug("end test case step")
 	return nil
 }
