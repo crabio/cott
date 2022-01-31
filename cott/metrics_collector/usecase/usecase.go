@@ -30,6 +30,7 @@ func NewMetricsCollectorUsecase(tcra *domain.TestCaseResultsAccumulator, cluc co
 	return mcuc
 }
 
+// TODO Refactor float64 onto interface{}
 func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseStep) error {
 	logrus.WithField("stepName", step.Name).Debug("collect test case step metrics")
 
@@ -44,6 +45,7 @@ func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseSte
 
 	startCpuTotalUsage := stats.CPUStats.CPUUsage.TotalUsage
 	startMemUsage := stats.MemoryStats.Usage
+	logrus.WithField("value", startMemUsage).Debug("startMemUsage")
 
 	var startStorageReadUsage, startStorageWriteUsage uint64
 	for _, blkIoStats := range stats.BlkioStats.IoServiceBytesRecursive {
@@ -72,24 +74,25 @@ func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseSte
 		return err
 	}
 
-	var resStorageReadUsage, resStorageWriteUsage uint64
+	var resStorageReadUsage, resStorageWriteUsage float64
 	for _, blkIoStats := range stats.BlkioStats.IoServiceBytesRecursive {
 		switch blkIoStats.Op {
 		case "Read":
-			resStorageReadUsage = blkIoStats.Value - startStorageReadUsage
+			resStorageReadUsage = float64(blkIoStats.Value) - float64(startStorageReadUsage)
 		case "Write":
-			resStorageWriteUsage = blkIoStats.Value - startStorageWriteUsage
+			resStorageWriteUsage = float64(blkIoStats.Value) - float64(startStorageWriteUsage)
 		}
 	}
 
-	logrus.WithField("stats", stats).Debug("collected metrics")
-	tcsra.AddMetric(domain.MetricMeta_CpuUsage, float64(stats.CPUStats.CPUUsage.TotalUsage-startCpuTotalUsage))
+	logrus.WithField("value", stats.MemoryStats.Usage).Debug("endMemUsage")
+
+	tcsra.AddMetric(domain.MetricMeta_CpuUsage, float64(stats.CPUStats.CPUUsage.TotalUsage)-float64(startCpuTotalUsage))
 	tcsra.AddMetric(domain.MetricMeta_MemoryUsage, float64(stats.MemoryStats.Usage))
-	tcsra.AddMetric(domain.MetricMeta_MemoryUsageDiff, float64(stats.MemoryStats.Usage-startMemUsage))
+	tcsra.AddMetric(domain.MetricMeta_MemoryUsageDiff, float64(stats.MemoryStats.Usage)-float64(startMemUsage))
 	tcsra.AddMetric(domain.MetricMeta_StorageReadUsage, float64(resStorageReadUsage))
 	tcsra.AddMetric(domain.MetricMeta_StorageWriteUsage, float64(resStorageWriteUsage))
-	tcsra.AddMetric(domain.MetricMeta_NetworkReceiveUsage, float64(stats.Networks[DEFAULT_NETWORK].RxBytes-startNetworkRxUsage))
-	tcsra.AddMetric(domain.MetricMeta_NetworkSendUsage, float64(stats.Networks[DEFAULT_NETWORK].TxBytes-startNetworkTxUsage))
+	tcsra.AddMetric(domain.MetricMeta_NetworkReceiveUsage, float64(stats.Networks[DEFAULT_NETWORK].RxBytes)-float64(startNetworkRxUsage))
+	tcsra.AddMetric(domain.MetricMeta_NetworkSendUsage, float64(stats.Networks[DEFAULT_NETWORK].TxBytes)-float64(startNetworkTxUsage))
 
 	logrus.WithField("name", step.Name).Debug("end test case step")
 	return nil
