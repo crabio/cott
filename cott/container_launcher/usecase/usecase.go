@@ -23,7 +23,7 @@ type ContainerLauncherUsecase interface {
 	StopContainer(id string) error
 	RemoveContainer(id string) error
 	// GetContainerStats get channel with container stats and cancel func for stopping receiving container stats
-	GetContainerStats(id string) (*types.Stats, error)
+	GetContainerStats(id string) (*types.StatsJSON, error)
 	GetContainerStatsStream(id string) (<-chan *types.Stats, context.CancelFunc, error)
 }
 
@@ -110,7 +110,7 @@ func (cluc *containerLauncherUsecase) RemoveContainer(id string) error {
 	return nil
 }
 
-func (cluc *containerLauncherUsecase) GetContainerStats(id string) (*types.Stats, error) {
+func (cluc *containerLauncherUsecase) GetContainerStats(id string) (*types.StatsJSON, error) {
 	statsResponse, err := cluc.cli.ContainerStats(context.Background(), id, false)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (cluc *containerLauncherUsecase) GetContainerStats(id string) (*types.Stats
 		return nil, err
 	}
 
-	var stats types.Stats
+	var stats types.StatsJSON
 
 	if err := json.Unmarshal(statsBytes, &stats); err != nil {
 		return nil, err

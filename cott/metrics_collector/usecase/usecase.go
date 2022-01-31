@@ -8,6 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const DEFAULT_NETWORK = "eth0"
+
 type MetricsCollectorUsecase interface {
 	CalcStepDuration(stepFunc func() error, stepName string) error
 	GetStepContainerStats(stepFunc func() error, stepName string, containerID string) error
@@ -47,6 +49,10 @@ func (mcuc *metricsCollectorUsecase) GetStepContainerStats(stepFunc func() error
 	}
 
 	startCpuTotalUsage := stats.CPUStats.CPUUsage.TotalUsage
+	startStorageReadUsage := stats.StorageStats.ReadSizeBytes
+	startStorageWriteUsage := stats.StorageStats.WriteSizeBytes
+	startNetworkRxUsage := stats.Networks[DEFAULT_NETWORK].RxBytes
+	startNetworkTxUsage := stats.Networks[DEFAULT_NETWORK].TxBytes
 
 	if err := stepFunc(); err != nil {
 		logrus.WithError(err).WithField("stepName", stepName).Warn("error on step execution")
@@ -62,8 +68,20 @@ func (mcuc *metricsCollectorUsecase) GetStepContainerStats(stepFunc func() error
 	resCpuTotalUsage := stats.CPUStats.CPUUsage.TotalUsage - startCpuTotalUsage
 	resMemUsage := stats.MemoryStats.Usage
 	resMaxMemUsage := stats.MemoryStats.MaxUsage
+	resStorageReadUsage := stats.StorageStats.ReadSizeBytes - startStorageReadUsage
+	resStorageWriteUsage := stats.StorageStats.WriteSizeBytes - startStorageWriteUsage
+	resNetworkRxUsage := stats.Networks[DEFAULT_NETWORK].RxBytes - startNetworkRxUsage
+	resNetworkTxUsage := stats.Networks[DEFAULT_NETWORK].TxBytes - startNetworkTxUsage
 
-	logrus.WithFields(logrus.Fields{"cpuUsage": resCpuTotalUsage, "resMemUsage": resMemUsage, "resMaxMemUsage": resMaxMemUsage}).Debug("result container usage")
+	logrus.WithFields(logrus.Fields{
+		"cpuUsage":             resCpuTotalUsage,
+		"resMemUsage":          resMemUsage,
+		"resMaxMemUsage":       resMaxMemUsage,
+		"resStorageReadUsage":  resStorageReadUsage,
+		"resStorageWriteUsage": resStorageWriteUsage,
+		"resNetworkRxUsage":    resNetworkRxUsage,
+		"resNetworkTxUsage":    resNetworkTxUsage,
+	}).Debug("result container usage")
 
 	return nil
 }
