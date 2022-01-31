@@ -33,12 +33,14 @@ func NewDatabaseTesterUsecase(cluc container_launcher.ContainerLauncherUsecase) 
 }
 
 func (dtuc *databaseTesterUsecase) RunCase(tcra *domain.TestCaseResultsAccumulator, containerId string) error {
+	logrus.WithField("testCase", *tcra.TestCase).Debug("run test case")
+
 	r, err := dtuc.createDatabaseRepository(tcra.TestCase)
 	if err != nil {
 		return err
 	}
 
-	mcuc := metrics_collector.NewMetricsCollectorUsecase(tcra, dtuc.cluc)
+	mcuc := metrics_collector.NewMetricsCollectorUsecase(tcra, dtuc.cluc, containerId)
 
 	step := &domain.TestCaseStep{Name: "openConnection", StepFunc: func() error { return r.Open() }}
 	if err := mcuc.CollectStepMetrics(step); err != nil {

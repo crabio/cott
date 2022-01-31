@@ -17,22 +17,28 @@ type MetricsCollectorUsecase interface {
 }
 
 type metricsCollectorUsecase struct {
-	tcra *domain.TestCaseResultsAccumulator
-	cluc container_launcher.ContainerLauncherUsecase
+	containerId string
+	tcra        *domain.TestCaseResultsAccumulator
+	cluc        container_launcher.ContainerLauncherUsecase
 }
 
-func NewMetricsCollectorUsecase(tcra *domain.TestCaseResultsAccumulator, cluc container_launcher.ContainerLauncherUsecase) MetricsCollectorUsecase {
+func NewMetricsCollectorUsecase(tcra *domain.TestCaseResultsAccumulator, cluc container_launcher.ContainerLauncherUsecase, containerId string) MetricsCollectorUsecase {
 	mcuc := new(metricsCollectorUsecase)
+	mcuc.containerId = containerId
 	mcuc.tcra = tcra
 	mcuc.cluc = cluc
 	return mcuc
 }
 
 func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseStep) error {
-	tcsra := new(domain.TestCaseStepResultsAccumulator)
+	logrus.WithField("stepName", step.Name).Debug("collect test case step metrics")
 
-	stats, err := mcuc.cluc.GetContainerStats(step.ContainerID)
+	tcsra := domain.NewTestCaseStepResultsAccumulator(step)
+
+	stats, err := mcuc.cluc.GetContainerStats(mcuc.containerId)
 	if err != nil {
+		logrus.WithError(err).WithField("step", step).Warn("couldn't get container stats")
+		tcsra.AddError(err.Error())
 		return err
 	}
 
@@ -51,8 +57,10 @@ func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseSte
 	}
 	tcsra.AddMetric(domain.MetricMeta_Duration, float64(time.Since(startTime).Microseconds()))
 
-	stats, err = mcuc.cluc.GetContainerStats(step.ContainerID)
+	stats, err = mcuc.cluc.GetContainerStats(mcuc.containerId)
 	if err != nil {
+		logrus.WithError(err).WithField("step", step).Warn("couldn't get container stats")
+		tcsra.AddError(err.Error())
 		return err
 	}
 
@@ -64,5 +72,6 @@ func (mcuc *metricsCollectorUsecase) CollectStepMetrics(step *domain.TestCaseSte
 	tcsra.AddMetric(domain.MetricMeta_NetworkReceiveUsage, float64(stats.Networks[DEFAULT_NETWORK].RxBytes-startNetworkRxUsage))
 	tcsra.AddMetric(domain.MetricMeta_NetworkSendUsage, float64(stats.Networks[DEFAULT_NETWORK].TxBytes-startNetworkTxUsage))
 
+	logrus.WithField("name", step.Name).Debug("end test case step")
 	return nil
 }
