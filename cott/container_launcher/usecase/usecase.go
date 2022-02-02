@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"strconv"
 	"strings"
@@ -21,16 +22,17 @@ type ContainerLauncherUsecase interface {
 	LaunchContainer(image string, envVarMap map[string]string, port uint16) (*string, error)
 	StopContainer(id string) error
 	RemoveContainer(id string) error
+	// GetContainerStats get channel with container stats and cancel func for stopping receiving container stats
+	GetContainerStats(id string) (*types.StatsJSON, error)
+	GetContainerStatsStream(id string) (<-chan *types.Stats, context.CancelFunc, error)
 }
 
 type containerLauncherUsecase struct {
-	ctx context.Context
 	cli *client.Client
 }
 
 func NewContainerLauncherUsecase() (ContainerLauncherUsecase, error) {
 	cluc := new(containerLauncherUsecase)
-	cluc.ctx = context.Background()
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -44,7 +46,7 @@ func NewContainerLauncherUsecase() (ContainerLauncherUsecase, error) {
 func (cluc *containerLauncherUsecase) LaunchContainer(image string, envVarMap map[string]string, port uint16) (*string, error) {
 	logrus.WithFields(logrus.Fields{"image": image, "envVarMap": envVarMap, "port": port}).Debug("launch container")
 
-	if reader, err := cluc.cli.ImagePull(cluc.ctx, image, types.ImagePullOptions{}); err != nil {
+	if reader, err := cluc.cli.ImagePull(context.Background(), image, types.ImagePullOptions{}); err != nil {
 		return nil, err
 	} else {
 		buf := new(strings.Builder)
@@ -76,13 +78,13 @@ func (cluc *containerLauncherUsecase) LaunchContainer(image string, envVarMap ma
 		},
 	}
 
-	resp, err := cluc.cli.ContainerCreate(cluc.ctx, containerCfg, hostCfg, nil, nil, "")
+	resp, err := cluc.cli.ContainerCreate(context.Background(), containerCfg, hostCfg, nil, nil, "")
 	if err != nil {
 		return nil, err
 	}
 	logrus.WithFields(logrus.Fields{"image": image, "id": resp.ID}).Debug("container created")
 
-	if err := cluc.cli.ContainerStart(cluc.ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := cluc.cli.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
 		return nil, err
 	}
 	logrus.WithFields(logrus.Fields{"image": image, "id": resp.ID}).Debug("container started")
@@ -91,7 +93,7 @@ func (cluc *containerLauncherUsecase) LaunchContainer(image string, envVarMap ma
 }
 
 func (cluc *containerLauncherUsecase) StopContainer(id string) error {
-	if err := cluc.cli.ContainerStop(cluc.ctx, id, &STOP_CONTAINER_TIMEOUT); err != nil {
+	if err := cluc.cli.ContainerStop(context.Background(), id, &STOP_CONTAINER_TIMEOUT); err != nil {
 		return err
 	}
 	logrus.WithField("id", id).Debug("container stopped")
@@ -100,12 +102,72 @@ func (cluc *containerLauncherUsecase) StopContainer(id string) error {
 }
 
 func (cluc *containerLauncherUsecase) RemoveContainer(id string) error {
-	if err := cluc.cli.ContainerRemove(cluc.ctx, id, types.ContainerRemoveOptions{}); err != nil {
+	if err := cluc.cli.ContainerRemove(context.Background(), id, types.ContainerRemoveOptions{}); err != nil {
 		return err
 	}
 	logrus.WithField("id", id).Debug("container removed")
 
 	return nil
+}
+
+func (cluc *containerLauncherUsecase) GetContainerStats(id string) (*types.StatsJSON, error) {
+	statsResponse, err := cluc.cli.ContainerStats(context.Background(), id, false)
+	if err != nil {
+		return nil, err
+	}
+
+	statsBytes, err := io.ReadAll(statsResponse.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var stats types.StatsJSON
+
+	if err := json.Unmarshal(statsBytes, &stats); err != nil {
+		return nil, err
+	}
+
+	return &stats, nil
+}
+
+func (cluc *containerLauncherUsecase) GetContainerStatsStream(id string) (<-chan *types.Stats, context.CancelFunc, error) {
+	ctx, ctxCancelFunc := context.WithCancel(context.Background())
+
+	statsResponse, err := cluc.cli.ContainerStats(ctx, id, true)
+	if err != nil {
+		ctxCancelFunc()
+		return nil, nil, err
+	}
+	logrus.WithField("id", id).Debug("start getting container stats")
+
+	statsCh := make(chan *types.Stats, 1)
+
+	// Goroutine for sending data from stats to channel
+	go func() {
+		defer close(statsCh)
+
+		decoder := json.NewDecoder(statsResponse.Body)
+		for {
+			select {
+			case <-ctx.Done():
+				statsResponse.Body.Close()
+				logrus.WithField("id", id).Debug("stop logging container stats. context done")
+				return
+			default:
+				var stats types.Stats
+				if err := decoder.Decode(&stats); err == io.EOF {
+					logrus.WithField("id", id).Debug("stop logging container stats")
+					return
+				} else if err != nil {
+					ctxCancelFunc()
+					break
+				}
+				statsCh <- &stats
+			}
+		}
+	}()
+
+	return statsCh, ctxCancelFunc, nil
 }
 
 func (cluc *containerLauncherUsecase) convertEnvVarsMapToSlice(envVarMap map[string]string) []string {

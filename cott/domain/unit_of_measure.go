@@ -3,7 +3,6 @@ package domain
 type UnitOfMeasurePrefix string
 
 const (
-	UnitOfMeasurePrefix_NA    = "na"
 	UnitOfMeasurePrefix_Nano  = "nano"
 	UnitOfMeasurePrefix_Micro = "micro"
 	UnitOfMeasurePrefix_Milli = "milli"
@@ -17,7 +16,6 @@ const (
 type UnitOfMeasure string
 
 const (
-	UnitOfMeasure_NA     = "na"
 	UnitOfMeasure_Byte   = "byte"
 	UnitOfMeasure_Second = "second"
 	UnitOfMeasure_Piece  = "piece"
